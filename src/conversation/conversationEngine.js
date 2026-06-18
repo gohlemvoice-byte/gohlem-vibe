@@ -5,6 +5,7 @@ const fs = require('fs');
 const OpenAI = require('openai');
 const GohlemMenuEngine = require('../../gohlem-menu-engine');
 const { OrderCart, buildSystemPrompt } = require('../orders/orderState');
+const MenuResolver = require('../orders/menuResolver');
 const restaurantConfig = require('../config/restaurantConfig');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, fetch: globalThis.fetch });
@@ -14,12 +15,12 @@ class ConversationEngine {
     const menuData = JSON.parse(fs.readFileSync(menuFilePath, 'utf8'));
     this.menuEngine = new GohlemMenuEngine(menuData);
     this.cart = new OrderCart();
+    this.resolver = new MenuResolver(this.menuEngine);
     this.systemPrompt = buildSystemPrompt(restaurantConfig);
     this.history = [];
   }
 
   // ─── OPEN CALL ────────────────────────────────────────────────────────────
-  // Generates the first spoken greeting without any customer input.
 
   async open() {
     const messages = [
@@ -49,7 +50,7 @@ class ConversationEngine {
   // ─── CHAT TURN ────────────────────────────────────────────────────────────
 
   async chat(userMessage) {
-    // Capture order type directly from keywords — never rely on the AI for this.
+    // Capture order type from keywords — code-side, never rely on AI action
     if (!this.cart.orderType) {
       const lower = userMessage.toLowerCase();
       if (/\bpick\s*-?\s*up\b|\bpickup\b/.test(lower)) {
@@ -59,32 +60,133 @@ class ConversationEngine {
       }
     }
 
+    // Resolve combo (for context injection and split modifier detection)
     const matches = this.menuEngine.findItems(userMessage);
     const combo = this.menuEngine.resolveCombo(userMessage);
     const menuContext = this._buildMenuContext(matches);
     const comboContext = this._buildComboContext(combo);
     const orderContext = this._buildOrderContext();
 
+    // Handle split modifiers entirely in code — AI just provides verbal confirmation
+    let splitResults = null;
+    if (combo && combo.type === 'split') {
+      splitResults = combo.instances.map(inst => {
+        const splitIntent = {
+          itemName: combo.item.name,
+          modifiers: inst.description.split(/,\s*/),
+          quantity: 1,
+          specialInstructions: '',
+        };
+        const resolved = this.resolver.resolve(splitIntent);
+        if (resolved.resolved) {
+          const cartItemId = this.cart.addItem(
+            resolved.menuItem,
+            resolved.validatedModifiers,
+            1,
+            resolved.specialInstructions
+          );
+          return { ok: true, cartItemId, name: resolved.menuItem.name };
+        }
+        return { ok: false, reason: resolved.reason };
+      });
+    }
+
+    // Build augmented message for AI
     const parts = ['[ORDER STATE]', orderContext, ''];
     if (comboContext) parts.push(comboContext, '');
     parts.push('[MENU SEARCH RESULTS]', menuContext, '', '[CUSTOMER MESSAGE]', userMessage);
 
-    const augmentedMessage = parts.join('\n');
-
     const messages = [
       { role: 'system', content: this.systemPrompt },
       ...this.history,
-      { role: 'user', content: augmentedMessage },
+      { role: 'user', content: parts.join('\n') },
     ];
 
     const raw = await this._callOpenAI(messages);
     const parsed = this._parseResponse(raw);
-    const actionResults = this._executeActions(parsed.actions || []);
+
+    // Process AI intent through MenuResolver (skip if split modifiers handled above)
+    const intentResult = splitResults
+      ? { ok: true, action: 'SPLIT', results: splitResults }
+      : this._processIntent(parsed.intent);
 
     this.history.push({ role: 'user', content: userMessage });
     this.history.push({ role: 'assistant', content: raw });
 
-    return { message: parsed.message, actions: parsed.actions || [], actionResults };
+    return {
+      message: parsed.message,
+      intent: parsed.intent || {},
+      intentResult,
+    };
+  }
+
+  // ─── INTENT PROCESSOR ────────────────────────────────────────────────────
+  // Receives the AI's raw intent, validates through MenuResolver, updates cart.
+
+  _processIntent(intent) {
+    if (!intent || intent.action === 'NONE' || !intent.action) {
+      return { ok: true, action: 'NONE' };
+    }
+
+    const { action, itemName, modifiers, quantity, specialInstructions } = intent;
+
+    if (action === 'SET_ORDER_TYPE') {
+      const val = (itemName || '').toLowerCase();
+      if (val.includes('pickup') || val.includes('pick')) {
+        this.cart.orderType = 'pickup';
+      } else if (val.includes('delivery') || val.includes('deliver')) {
+        this.cart.orderType = 'delivery';
+      }
+      return { ok: true, action };
+    }
+
+    if (action === 'ADD_ITEM') {
+      const resolved = this.resolver.resolve({ itemName, modifiers, quantity, specialInstructions });
+      if (!resolved.resolved) {
+        return { ok: false, action, error: resolved.reason };
+      }
+      const cartItemId = this.cart.addItem(
+        resolved.menuItem,
+        resolved.validatedModifiers,
+        quantity || 1,
+        resolved.specialInstructions
+      );
+      return { ok: true, action, cartItemId, name: resolved.menuItem.name };
+    }
+
+    if (action === 'REMOVE_ITEM') {
+      const needle = (itemName || '').toLowerCase();
+      const item = this.cart.getActiveItems().find(i =>
+        i.name.toLowerCase().includes(needle)
+      );
+      if (!item) return { ok: false, action, error: `"${itemName}" not found in cart` };
+      this.cart.removeItem(item.cartItemId);
+      return { ok: true, action };
+    }
+
+    if (action === 'UPDATE_ITEM') {
+      const needle = (itemName || '').toLowerCase();
+      const item = this.cart.getActiveItems().find(i =>
+        i.name.toLowerCase().includes(needle)
+      );
+      if (!item) return { ok: false, action, error: `"${itemName}" not found in cart` };
+
+      if (modifiers && modifiers.length > 0) {
+        const resolved = this.resolver.resolve({ itemName, modifiers, specialInstructions });
+        if (resolved.resolved && resolved.validatedModifiers.length > 0) {
+          this.cart.updateModifiers(item.cartItemId, resolved.validatedModifiers);
+        }
+      }
+      if (specialInstructions) {
+        this.cart.addSpecialInstruction(item.cartItemId, specialInstructions);
+      }
+      if (quantity && quantity !== item.quantity) {
+        this.cart.updateQuantity(item.cartItemId, quantity);
+      }
+      return { ok: true, action };
+    }
+
+    return { ok: true, action: 'NONE' };
   }
 
   // ─── OPENAI CALL ──────────────────────────────────────────────────────────
@@ -105,85 +207,8 @@ class ConversationEngine {
     try {
       return JSON.parse(raw);
     } catch {
-      return { message: raw, actions: [] };
+      return { message: raw, intent: { action: 'NONE' } };
     }
-  }
-
-  // ─── EXECUTE ACTIONS ──────────────────────────────────────────────────────
-
-  _executeActions(actions) {
-    const results = [];
-
-    for (const action of actions) {
-      switch (action.type) {
-        case 'SET_ORDER_TYPE': {
-          this.cart.orderType = action.orderType;
-          results.push({ type: action.type, ok: true, orderType: action.orderType });
-          break;
-        }
-
-        case 'ADD_ITEM': {
-          // Name-only resolution. The AI never returns an ID — code resolves
-          // item name → real menu item with real ID and real price.
-          const menuItem = action.name
-            ? this.menuEngine.findItems(action.name)[0] || null
-            : null;
-
-          if (!menuItem) {
-            results.push({
-              type: action.type,
-              ok: false,
-              error: `Item not found: "${action.name}" — ask customer to clarify`,
-            });
-            break;
-          }
-
-          const cartItemId = this.cart.addItem(
-            menuItem,
-            action.modifiers || [],
-            action.quantity || 1,
-            action.specialInstructions || ''
-          );
-          results.push({ type: action.type, ok: true, cartItemId, name: menuItem.name });
-          break;
-        }
-
-        case 'REMOVE_ITEM': {
-          const msg = this.cart.removeItem(action.cartItemId);
-          results.push({ type: action.type, ok: true, message: msg });
-          break;
-        }
-
-        case 'UPDATE_QUANTITY': {
-          this.cart.updateQuantity(action.cartItemId, action.quantity);
-          results.push({ type: action.type, ok: true });
-          break;
-        }
-
-        case 'UPDATE_MODIFIERS': {
-          this.cart.updateModifiers(action.cartItemId, action.modifiers || []);
-          results.push({ type: action.type, ok: true });
-          break;
-        }
-
-        case 'ADD_SPECIAL_INSTRUCTION': {
-          this.cart.addSpecialInstruction(action.cartItemId, action.instruction);
-          results.push({ type: action.type, ok: true });
-          break;
-        }
-
-        case 'CLEAR_ORDER': {
-          const msg = this.cart.clear();
-          results.push({ type: action.type, ok: true, message: msg });
-          break;
-        }
-
-        default:
-          results.push({ type: action.type, ok: false, error: 'Unknown action type' });
-      }
-    }
-
-    return results;
   }
 
   // ─── CONTEXT BUILDERS ─────────────────────────────────────────────────────
@@ -210,46 +235,28 @@ class ConversationEngine {
     return ctx;
   }
 
+  // Dynamic menu injection — Change 3.
+  // Only injects items relevant to the current query.
+  // Context is compact: name + category + required modifier GROUP NAMES only.
+  // The AI captures what the customer says verbatim; MenuResolver matches to options.
   _buildMenuContext(matches) {
-    if (matches.length === 0) {
-      return 'No matching items found in the menu for this query.';
+    if (!matches.length) {
+      return 'No matching items found for this query.';
     }
 
     let ctx = '';
-
-    for (const item of matches) {
+    for (const item of matches.slice(0, 10)) {
       const price = item.base_price != null ? ` — $${item.base_price.toFixed(2)}` : '';
-      ctx += `\n• id: ${item.id} | ${item.name}${price} (${item.category})\n`;
+      ctx += `\n• ${item.name}${price} (${item.category})\n`;
 
       if (item.description) ctx += `  ${item.description}\n`;
 
+      // Inject required modifier GROUP NAMES so the AI knows what to ask.
+      // Do NOT list all modifier options — MenuResolver resolves those from data.
       const analysis = this.menuEngine.analyzeModifiers(item);
-
       if (analysis.mustAsk.length > 0) {
-        ctx += `  REQUIRED (must ask before confirming):\n`;
-        for (const g of analysis.mustAsk) {
-          const opts = g.options
-            .map(o => o.price > 0 ? `${o.name} (+$${o.price.toFixed(2)})` : o.name)
-            .join(', ');
-          ctx += `    - ${g.name}: ${opts}\n`;
-        }
-      }
-
-      if (analysis.shouldAsk.length > 0) {
-        ctx += `  OPTIONAL (ask if not specified):\n`;
-        for (const g of analysis.shouldAsk) {
-          const opts = g.options
-            .map(o => o.price > 0 ? `${o.name} (+$${o.price.toFixed(2)})` : o.name)
-            .join(', ');
-          ctx += `    - ${g.name}: ${opts}\n`;
-        }
-      }
-
-      if (analysis.willAssume.length > 0) {
-        ctx += `  AUTO-APPLIED defaults:\n`;
-        for (const g of analysis.willAssume) {
-          ctx += `    - ${g.name}: "${g.assumedDefault?.name}"\n`;
-        }
+        const groupNames = analysis.mustAsk.map(g => g.name).join(', ');
+        ctx += `  Must ask before adding: ${groupNames}\n`;
       }
     }
 
@@ -263,46 +270,39 @@ class ConversationEngine {
       const lines = [
         '[COMBINATION ANALYSIS — MENU DATA VERIFIED]',
         `Status   : DIRECT MENU ITEM MATCH`,
-        `Item     : ${combo.item.name} — $${combo.item.base_price.toFixed(2)} (id: ${combo.item.id})`,
+        `Item     : ${combo.item.name} — $${combo.item.base_price.toFixed(2)}`,
       ];
       if (combo.quantity && combo.quantity !== '1' && combo.quantity !== 'one') {
         lines.push(`Quantity : ${combo.quantity} — add as separate line items per the QUANTITY rule`);
       }
-      lines.push(`Action   : This item exists directly on the menu. Use ADD_ITEM with this menuItemId. Ask any required modifier questions, then confirm.`);
+      lines.push(`Action   : Return ADD_ITEM intent with itemName "${combo.item.name}". Ask any required questions.`);
       return lines.join('\n');
     }
 
     if (combo.type === 'combo') {
-      const modPrice = combo.modifier.price > 0
-        ? ` +$${combo.modifier.price.toFixed(2)}`
-        : ' $0.00';
       const lines = [
         '[COMBINATION ANALYSIS — MENU DATA VERIFIED]',
         `Status   : VALID COMBINATION`,
-        `Base item: ${combo.item.name} — $${combo.item.base_price.toFixed(2)} (id: ${combo.item.id})`,
-        `Modifier : "${combo.modifier.name}"${modPrice} (group: "${combo.modifier.groupName}")`,
+        `Base item: ${combo.item.name} — $${combo.item.base_price.toFixed(2)}`,
+        `Modifier : "${combo.modifier.name}" (group: "${combo.modifier.groupName}")`,
       ];
       if (combo.quantity && combo.quantity !== '1' && combo.quantity !== 'one') {
         lines.push(`Quantity : ${combo.quantity} — add as separate line items`);
       }
-      lines.push(`Action   : Use ADD_ITEM with this menuItemId and include this modifier. Then ask any remaining required modifier questions before confirming.`);
+      lines.push(`Action   : Return ADD_ITEM intent with itemName "${combo.item.name}" and include the modifier in intent.modifiers[]. Ask remaining required questions.`);
       return lines.join('\n');
     }
 
     if (combo.type === 'split') {
       const lines = [
         '[COMBINATION ANALYSIS — MENU DATA VERIFIED]',
-        `Status   : SPLIT MODIFIER ORDER — ${combo.quantity} separate line items required`,
-        `Item     : ${combo.item.name} — $${combo.item.base_price.toFixed(2)} (id: ${combo.item.id})`,
+        `Status   : SPLIT MODIFIER ORDER — ${combo.quantity} separate items — CODE HANDLES CART AUTOMATICALLY`,
+        `Item     : ${combo.item.name} — $${combo.item.base_price.toFixed(2)}`,
       ];
       combo.instances.forEach((inst, i) => {
-        lines.push(`Instance ${i + 1} of ${combo.instances.length}: ${inst.description}`);
+        lines.push(`Instance ${i + 1}: ${inst.description}`);
       });
-      lines.push(
-        `Action   : Output EXACTLY ${combo.instances.length} ADD_ITEM actions, each with the same menuItemId.`,
-        `           Match each instance's description to the closest modifier option in the MENU SEARCH RESULTS.`,
-        `           Do NOT merge into one item. Do NOT emit fewer than ${combo.instances.length} ADD_ITEM actions.`
-      );
+      lines.push(`Action   : Set intent.action to NONE. Provide verbal confirmation only. The code will add both items.`);
       return lines.join('\n');
     }
 
@@ -313,9 +313,9 @@ class ConversationEngine {
       return [
         '[COMBINATION ANALYSIS — MENU DATA VERIFIED]',
         `Status   : NOT A VALID COMBINATION`,
-        `Requested: "${combo.queriedComponent}" — this does NOT exist as a modifier on any matching menu item.`,
+        `Requested: "${combo.queriedComponent}" — does NOT exist as a modifier on any matching item.`,
         suggestLine,
-        `Action   : Do NOT add this item. Tell the customer this combination is not available. Use SPECIAL TERMINOLOGY from your config to suggest the closest real alternative.`,
+        `Action   : Set intent.action to NONE. Tell the customer this combination is not available. Suggest the closest real alternative using SPECIAL TERMINOLOGY.`,
       ].join('\n');
     }
 
@@ -323,7 +323,7 @@ class ConversationEngine {
       return [
         '[COMBINATION ANALYSIS — MENU DATA VERIFIED]',
         `Status   : NO MATCH FOUND`,
-        `Action   : Tell the customer this item is not on the menu. Offer to help with something else.`,
+        `Action   : Set intent.action to NONE. Tell the customer this item is not on the menu.`,
       ].join('\n');
     }
 
@@ -357,14 +357,18 @@ if (require.main === module) {
       const result = await engine.chat(message);
       console.log(`Gohlem:   ${result.message}`);
 
-      for (let i = 0; i < result.actions.length; i++) {
-        const action = result.actions[i];
-        const outcome = result.actionResults[i];
-        const ok = outcome.ok ? '✓' : '✗';
-        const detail = outcome.cartItemId
-          ? ` → ${outcome.cartItemId} (${action.name || ''})`
-          : outcome.error ? ` → ${outcome.error}` : '';
-        console.log(`  [${ok}] ${action.type}${detail}`);
+      const ir = result.intentResult;
+      if (ir && ir.action && ir.action !== 'NONE') {
+        const ok = ir.ok ? '✓' : '✗';
+        const detail = ir.cartItemId ? ` → ${ir.cartItemId}` : ir.error ? ` → ${ir.error}` : '';
+        const name = ir.name ? ` "${ir.name}"` : result.intent?.itemName ? ` "${result.intent.itemName}"` : '';
+        console.log(`  [${ok}] ${ir.action}${name}${detail}`);
+      }
+      if (ir && ir.results) {
+        ir.results.forEach(r => {
+          const ok = r.ok ? '✓' : '✗';
+          console.log(`  [${ok}] SPLIT ADD_ITEM "${r.name || ''}"${r.cartItemId ? ' → ' + r.cartItemId : ''}`);
+        });
       }
     }
 
@@ -381,25 +385,21 @@ if (require.main === module) {
     console.log('GOHLEM.AI — Combination Resolver Tests (A–D)');
     console.log('='.repeat(65));
 
-    // Test A — cream cheese exists as a modifier → COMBO
     await runComboTest('Test A: "I want a cream cheese sandwich"', [
       'Pickup',
       'I want a cream cheese sandwich',
     ]);
 
-    // Test B — salmon is not a modifier → NOT_COMBINABLE, AI should suggest lox
     await runComboTest('Test B: "I want a salmon sandwich"', [
       'Pickup',
       'I want a salmon sandwich',
     ]);
 
-    // Test C — nothing matches at all → NOT_FOUND
     await runComboTest('Test C: "I want something completely made up"', [
       'Pickup',
       'I want something completely made up',
     ]);
 
-    // Test D — lox IS a modifier → COMBO
     await runComboTest('Test D: "I want a lox sandwich"', [
       'Pickup',
       'I want a lox sandwich',

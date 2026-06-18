@@ -234,36 +234,37 @@ Forget previously confirmed items.
 Contradict what is already in the order.`;
 
 const RESPONSE_FORMAT = `RESPONSE FORMAT — CRITICAL:
-You must ALWAYS respond with valid JSON only. No text before or after the JSON. Every single response must be JSON.
+You must ALWAYS respond with valid JSON only. No text before or after the JSON.
 
 {
-  "message": "What you say to the customer — this is spoken on the phone. Natural, conversational, no bullet points.",
-  "actions": [
-    // Include ONLY when customer is actually placing/modifying an order. Empty array [] if no order changes.
+  "message": "What you say to the customer — spoken on the phone, natural and conversational.",
+  "intent": {
+    "action": "ADD_ITEM | REMOVE_ITEM | UPDATE_ITEM | SET_ORDER_TYPE | NONE",
+    "itemName": "the item name as the customer described it — plain text only, no IDs, no prices",
+    "modifiers": ["modifier exactly as customer said it", "another modifier"],
+    "quantity": 1,
+    "specialInstructions": "free-text preparation notes"
+  }
+}
 
-    {"type": "SET_ORDER_TYPE", "orderType": "pickup or delivery"},
+ACTION RULES:
+ADD_ITEM      — customer is ordering something new
+REMOVE_ITEM   — customer wants to remove an item already in cart (itemName = what to remove)
+UPDATE_ITEM   — customer is changing a modifier or quantity on something already in the cart
+SET_ORDER_TYPE — customer said pickup or delivery (set itemName to "pickup" or "delivery")
+NONE          — no cart action: questions, clarifications, greetings, confirmations
 
-    {"type": "ADD_ITEM",
-     "name": "item name exactly as shown in menu context — no IDs, names only",
-     "quantity": 1,
-     "modifiers": [{"name": "modifier name", "action": "ADD|REMOVE|EXTRA|LIGHT|SIDE", "price": 0}],
-     "specialInstructions": "free text or empty string"},
+MODIFIER RULES:
+modifiers is an array of exactly what the customer said, verbatim: "sesame bagel", "not toasted", "no eggplant", "extra feta".
+Do NOT try to match modifiers to menu option names. Do NOT include prices. Just capture what was said.
 
-    {"type": "REMOVE_ITEM", "cartItemId": "cartItemId from ORDER STATE context"},
+SPLIT MODIFIERS:
+When COMBINATION ANALYSIS shows SPLIT MODIFIER ORDER — the code handles the cart automatically.
+Set intent.action to NONE and provide verbal confirmation only in message.
 
-    {"type": "UPDATE_QUANTITY", "cartItemId": "cartItemId from ORDER STATE context", "quantity": 2},
-
-    {"type": "UPDATE_MODIFIERS",
-     "cartItemId": "cartItemId from ORDER STATE context",
-     "modifiers": [{"name": "modifier name", "action": "ADD|REMOVE|EXTRA|LIGHT|SIDE", "price": 0}]},
-
-    {"type": "ADD_SPECIAL_INSTRUCTION",
-     "cartItemId": "cartItemId from ORDER STATE context",
-     "instruction": "text"},
-
-    {"type": "CLEAR_ORDER"}
-  ]
-}`;
+ONE INTENT PER RESPONSE:
+If the customer orders two different items in one sentence, capture the first as intent and address the second in your message.
+Exception: identical items with the same modifiers may use quantity > 1.`;
 
 function buildSystemPrompt(restaurantConfig) {
   const { restaurantInfo, specialTerminology, faqKnowledgeBase, storeSpecificInstructions } = restaurantConfig;

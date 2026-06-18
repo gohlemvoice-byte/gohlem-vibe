@@ -96,6 +96,7 @@ wss.on('connection', (twilioWs) => {
           dgConn: null,
           dgReady: false,
           state: 'init', // init | greeting | speaking | listening | processing | done
+          processing: false, // guard against concurrent transcript events
           startTime: Date.now(),
         };
         sessions.set(callSid, session);
@@ -105,7 +106,7 @@ wss.on('connection', (twilioWs) => {
       }
 
       case 'media': {
-        if (!session || session.state !== 'listening') break;
+        if (!session || session.state !== 'listening' || session.processing) break;
         if (!session.dgConn || !session.dgReady) break;
         const audio = Buffer.from(msg.media.payload, 'base64');
         session.dgConn.send(audio);
@@ -162,7 +163,8 @@ function startListening(session) {
     encoding: 'mulaw',
     sample_rate: 8000,
     channels: 1,
-    endpointing: 500,     // fire speech_final after 500ms silence
+    endpointing: 1500,        // fire speech_final after 1500ms silence
+    utterance_end_ms: 2000,   // backup utterance boundary at 2000ms
     interim_results: true,
   });
 
@@ -176,6 +178,10 @@ function startListening(session) {
     if (!text) return;
     if (!data.is_final || !data.speech_final) return;
 
+    // Prevent race condition — drop duplicate final events
+    if (session.processing) return;
+    session.processing = true;
+
     log(session.callSid, `Heard: "${text}"`);
 
     // Shut down this STT connection; a new one opens next round
@@ -185,6 +191,7 @@ function startListening(session) {
     session.dgReady = false;
 
     await processUtterance(session, text);
+    session.processing = false;
   });
 
   conn.on(LiveTranscriptionEvents.Error, (err) => {
