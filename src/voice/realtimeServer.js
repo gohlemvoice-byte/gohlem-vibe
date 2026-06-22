@@ -302,7 +302,6 @@ fastify.get('/voice/stream', { websocket: true }, (socket, _req) => {
       openAiWs = new WebSocket(REALTIME_URL, {
         headers: {
           Authorization: `Bearer ${OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'realtime=v1',
         },
       });
 
