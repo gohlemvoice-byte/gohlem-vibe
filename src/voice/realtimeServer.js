@@ -458,3 +458,4 @@ fastify.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
   log(null, `Model: gpt-4o-realtime-preview  Voice: ${VOICE}`);
   log(null, `Routes: POST /voice/inbound  GET /voice/stream  GET /health`);
 });
+
