@@ -309,6 +309,10 @@ fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
         let event;
         try { event = JSON.parse(data); } catch { return; }
 
+        if (event.type !== 'response.audio.delta' && event.type !== 'response.output_audio.delta') {
+          log(session?.callSid || 'OPENAI', `EVENT: ${event.type}`);
+        }
+
         // ── Session created → send config ────────────────────────────────────
         if (event.type === 'session.created') {
           const sessionUpdate = {
