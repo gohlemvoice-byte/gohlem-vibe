@@ -23,6 +23,8 @@ class ConversationEngine {
   // ─── OPEN CALL ────────────────────────────────────────────────────────────
 
   async open() {
+    const version = restaurantConfig.restaurantInfo.version;
+    const greeting = `${version}. Thank you for calling Hot Bagels on 2nd Street. How can I help you today?`;
     const messages = [
       { role: 'system', content: this.systemPrompt },
       {
@@ -33,7 +35,7 @@ class ConversationEngine {
           'No items in order yet.',
           '',
           '[CUSTOMER MESSAGE]',
-          '(Call just connected. Generate your opening greeting.)',
+          `(Call just connected. Your opening greeting must be exactly: "${greeting}")`,
         ].join('\n'),
       },
     ];
