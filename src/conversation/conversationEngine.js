@@ -7,17 +7,19 @@ const GohlemMenuEngine = require('../../gohlem-menu-engine');
 const { OrderCart, buildSystemPrompt } = require('../orders/orderState');
 const MenuResolver = require('../orders/menuResolver');
 const restaurantConfig = require('../config/restaurantConfig');
+const { ConversationController } = require('./conversationController');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, fetch: globalThis.fetch });
 
 class ConversationEngine {
   constructor(menuFilePath) {
     const menuData = JSON.parse(fs.readFileSync(menuFilePath, 'utf8'));
-    this.menuEngine = new GohlemMenuEngine(menuData);
-    this.cart = new OrderCart();
-    this.resolver = new MenuResolver(this.menuEngine);
+    this.menuEngine   = new GohlemMenuEngine(menuData);
+    this.cart         = new OrderCart();
+    this.resolver     = new MenuResolver(this.menuEngine);
     this.systemPrompt = buildSystemPrompt(restaurantConfig);
-    this.history = [];
+    this.history      = [];
+    this.controller   = new ConversationController(this.menuEngine);
   }
 
   // ─── OPEN CALL ────────────────────────────────────────────────────────────
@@ -52,73 +54,242 @@ class ConversationEngine {
   // ─── CHAT TURN ────────────────────────────────────────────────────────────
 
   async chat(userMessage) {
-    // Capture order type from keywords — code-side, never rely on AI action
+    // Order type detection — code-side, never rely on AI action
     if (!this.cart.orderType) {
       const lower = userMessage.toLowerCase();
-      if (/\bpick\s*-?\s*up\b|\bpickup\b/.test(lower)) {
-        this.cart.orderType = 'pickup';
-      } else if (/\bdeliver(y|ing)?\b/.test(lower)) {
-        this.cart.orderType = 'delivery';
-      }
+      if (/\bpick\s*-?\s*up\b|\bpickup\b/.test(lower))   this.cart.orderType = 'pickup';
+      else if (/\bdeliver(y|ing)?\b/.test(lower))         this.cart.orderType = 'delivery';
     }
 
-    // Resolve combo (for context injection and split modifier detection)
-    const matches = this.menuEngine.findItems(userMessage);
-    const combo = this.menuEngine.resolveCombo(userMessage);
-    const menuContext = this._buildMenuContext(matches);
-    const comboContext = this._buildComboContext(combo);
-    const orderContext = this._buildOrderContext();
+    let messages, raw, parsed, intentResult, splitResults = null;
+    let topMatch = null; // best menu item candidate for controller.detectStateFromAIResponse
 
-    // Handle split modifiers entirely in code — AI just provides verbal confirmation
-    let splitResults = null;
-    if (combo && combo.type === 'split') {
-      splitResults = combo.instances.map(inst => {
-        const splitIntent = {
-          itemName: combo.item.name,
-          modifiers: inst.description.split(/,\s*/),
-          quantity: 1,
-          specialInstructions: '',
-        };
-        const resolved = this.resolver.resolve(splitIntent);
-        if (resolved.resolved) {
-          const cartItemId = this.cart.addItem(
-            resolved.menuItem,
-            resolved.validatedModifiers,
-            1,
-            resolved.specialInstructions
-          );
-          return { ok: true, cartItemId, name: resolved.menuItem.name };
+    // ── Controller routing ──────────────────────────────────────────────────
+    const inputResult = this.controller.processInput(userMessage);
+
+    if (inputResult.bypassMenuSearch) {
+      // ── AWAITING_MODIFIER path: match customer answer directly ────────────
+      const orderContext = this._buildOrderContext();
+
+      if (inputResult.customerDone) {
+        // Customer finished modifier collection — add item to cart directly
+        const item = this.controller.currentItem;
+        const cartItemId = this.cart.addItem(item.menuItem, item.modifiers, 1, '');
+        const collected  = item.modifiers.map(m => m.name).join(', ') || 'no extra modifiers';
+        intentResult = { ok: true, action: 'ADD_ITEM', cartItemId, name: item.menuItem.name };
+        this.controller.currentItem = null;
+        topMatch = null;
+
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[ITEM ADDED TO CART]',
+              `"${item.menuItem.name}" added with: ${collected}`,
+              `Customer message: "${userMessage}" — they may be done ordering or want to continue.`,
+              'Confirm the addition and ask if they want anything else, OR read back the full order if they said that\'s it.',
+              '',
+              '[ORDER STATE]', this._buildOrderContext(),
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+
+      } else if (inputResult.modifierMatched) {
+        const opt = inputResult.modifierMatched;
+        this.controller.addModifier(opt, inputResult.askedGroup.name);
+
+        const item      = this.controller.currentItem;
+        const analysis  = this.menuEngine.analyzeModifiers(item.menuItem);
+        const required  = analysis.mustAsk.map(g => g.name);
+        const satisfied = new Set(item.modifiers.map(m => m.groupName));
+        const missing   = required.filter(n => !satisfied.has(n));
+        const collected = item.modifiers.map(m => `${m.name} (${m.groupName})`).join(', ');
+
+        // Advance to next pending group
+        const nextGroup = this.controller.advanceToNextGroup();
+
+        let directive;
+        if (missing.length > 0) {
+          const nextRequired = analysis.mustAsk.find(g => !satisfied.has(g.name));
+          directive = [
+            `Still need required modifier: "${nextRequired.name}".`,
+            `Options: ${nextRequired.options.map(o => o.name).join(', ')}`,
+            `Ask the customer for their ${nextRequired.name} choice.`,
+          ].join(' ');
+        } else if (nextGroup) {
+          directive = [
+            `Required modifier satisfied. Collected so far: ${collected}`,
+            `Now ask specifically about "${nextGroup.name}".`,
+            `Options: ${nextGroup.options.map(o => o.name).join(', ')}`,
+          ].join(' ');
+        } else {
+          directive = [
+            `All modifier questions answered. Collected: ${collected}`,
+            `Add "${item.menuItem.name}" to cart now using ADD_ITEM intent with all collected modifiers.`,
+          ].join(' ');
         }
-        return { ok: false, reason: resolved.reason };
-      });
+
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[MODIFIER RESOLVED]',
+              `Customer answered: "${userMessage}"`,
+              `Matched to: "${opt.name}" in group "${inputResult.askedGroup.name}"`,
+              directive,
+              '',
+              '[ORDER STATE]', orderContext,
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+        topMatch = item.menuItem;
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+        intentResult = this._processIntent(parsed.intent);
+
+        if (intentResult.ok && intentResult.action === 'ADD_ITEM') {
+          this.controller.currentItem = null;
+        }
+
+      } else {
+        // No match — ask again
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[MODIFIER NOT MATCHED]',
+              `Customer said: "${userMessage}" — no match in "${inputResult.askedGroup.name}".`,
+              `Valid options: ${inputResult.askedGroup.options.map(o => o.name).join(', ')}`,
+              'Please politely ask again for this modifier.',
+              '',
+              '[ORDER STATE]', orderContext,
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+        topMatch = this.controller.currentItem?.menuItem || null;
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+        intentResult = this._processIntent(parsed.intent);
+
+        if (intentResult.ok && intentResult.action === 'ADD_ITEM') {
+          this.controller.currentItem = null;
+        }
+      }
+
+    } else {
+      // ── Normal ORDERING path ─────────────────────────────────────────────
+      const orderContext = this._buildOrderContext();
+
+      // Done-phrase with non-empty cart → skip menu search, prompt order read-back
+      const isDonePhrase = !this.cart.isEmpty()
+        && /^(that('?s)?( it| all)?|nothing(?: else)?|no(?: (?:more|thanks?|thank you))?|done|finished|nope)\b/i
+            .test(userMessage.trim());
+
+      if (isDonePhrase) {
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[CUSTOMER DONE ORDERING]',
+              'Customer has indicated they are finished ordering.',
+              'Read back their complete order, state the total, and ask for confirmation.',
+              '',
+              '[ORDER STATE]', orderContext,
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+        intentResult = { ok: true, action: 'NONE' };
+
+      } else {
+
+      const matches      = this.menuEngine.findItems(userMessage);
+      const combo        = this.menuEngine.resolveCombo(userMessage);
+      const menuContext  = this._buildMenuContext(matches);
+      const comboContext = this._buildComboContext(combo);
+      topMatch = matches[0] || null;
+
+      if (combo && combo.type === 'split') {
+        splitResults = combo.instances.map(inst => {
+          const splitIntent = {
+            itemName: combo.item.name,
+            modifiers: inst.description.split(/,\s*/),
+            quantity: 1,
+            specialInstructions: '',
+          };
+          const resolved = this.resolver.resolve(splitIntent);
+          if (resolved.resolved) {
+            const cartItemId = this.cart.addItem(
+              resolved.menuItem, resolved.validatedModifiers, 1, resolved.specialInstructions
+            );
+            return { ok: true, cartItemId, name: resolved.menuItem.name };
+          }
+          return { ok: false, reason: resolved.reason };
+        });
+      }
+
+      const parts = ['[ORDER STATE]', orderContext, ''];
+      if (comboContext) parts.push(comboContext, '');
+      parts.push('[MENU SEARCH RESULTS]', menuContext, '', '[CUSTOMER MESSAGE]', userMessage);
+
+      messages = [
+        { role: 'system', content: this.systemPrompt },
+        ...this.history,
+        { role: 'user', content: parts.join('\n') },
+      ];
+
+      raw    = await this._callOpenAI(messages);
+      parsed = this._parseResponse(raw);
+      intentResult = splitResults
+        ? { ok: true, action: 'SPLIT', results: splitResults }
+        : this._processIntent(parsed.intent);
+
+      // Use resolved item as topMatch so detectStateFromAIResponse can find
+      // the right modifier groups whether the item was added or is still pending
+      if (intentResult.ok && intentResult.menuItem) {
+        topMatch = intentResult.menuItem;
+        this.controller.currentItem = null; // item is in cart, no longer pending
+      } else if (!intentResult.ok && intentResult.pendingItem) {
+        topMatch = intentResult.pendingItem; // item blocked — controller will collect modifiers
+      }
+
+      } // end else (menu search path)
     }
 
-    // Build augmented message for AI
-    const parts = ['[ORDER STATE]', orderContext, ''];
-    if (comboContext) parts.push(comboContext, '');
-    parts.push('[MENU SEARCH RESULTS]', menuContext, '', '[CUSTOMER MESSAGE]', userMessage);
-
-    const messages = [
-      { role: 'system', content: this.systemPrompt },
-      ...this.history,
-      { role: 'user', content: parts.join('\n') },
-    ];
-
-    const raw = await this._callOpenAI(messages);
-    const parsed = this._parseResponse(raw);
-
-    // Process AI intent through MenuResolver (skip if split modifiers handled above)
-    const intentResult = splitResults
-      ? { ok: true, action: 'SPLIT', results: splitResults }
-      : this._processIntent(parsed.intent);
+    // ── Update controller state from AI response ────────────────────────────
+    this.controller.detectStateFromAIResponse(parsed.message, topMatch);
 
     this.history.push({ role: 'user', content: userMessage });
     this.history.push({ role: 'assistant', content: raw });
 
     return {
-      message: parsed.message,
-      intent: parsed.intent || {},
+      message:         parsed.message,
+      intent:          parsed.intent || {},
       intentResult,
+      controllerState: this.controller.getState(),
     };
   }
 
@@ -147,13 +318,23 @@ class ConversationEngine {
       if (!resolved.resolved) {
         return { ok: false, action, error: resolved.reason };
       }
+      // Block add when required modifiers are missing — controller will collect them
+      if (resolved.missingRequired && resolved.missingRequired.length > 0) {
+        return {
+          ok: false,
+          action,
+          pendingItem: resolved.menuItem,
+          missingRequired: resolved.missingRequired,
+          error: `Missing required: ${resolved.missingRequired.map(e => e.groupName).join(', ')}`,
+        };
+      }
       const cartItemId = this.cart.addItem(
         resolved.menuItem,
         resolved.validatedModifiers,
         quantity || 1,
         resolved.specialInstructions
       );
-      return { ok: true, action, cartItemId, name: resolved.menuItem.name };
+      return { ok: true, action, cartItemId, name: resolved.menuItem.name, menuItem: resolved.menuItem };
     }
 
     if (action === 'REMOVE_ITEM') {
@@ -329,8 +510,9 @@ class ConversationEngine {
   }
 
   reset() {
-    this.cart = new OrderCart();
-    this.history = [];
+    this.cart       = new OrderCart();
+    this.history    = [];
+    this.controller = new ConversationController(this.menuEngine);
   }
 }
 
