@@ -7,6 +7,8 @@ const WebSocket = require('ws');
 const { twiml: TwilioTwiml } = require('twilio');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
+const { randomUUID } = require('crypto');
+
 const ConversationEngine = require('../conversation/conversationEngine');
 const restaurantConfig = require('../config/restaurantConfig');
 
@@ -22,6 +24,39 @@ const deepgramClient = createClient(DG_KEY);
 
 // callSid → session
 const sessions = new Map();
+// sessionId cookie → browser test session
+const browserSessions = new Map();
+
+function parseCookies(req) {
+  const result = {};
+  const header = req.headers.cookie;
+  if (!header) return result;
+  for (const pair of header.split(';')) {
+    const [k, ...v] = pair.trim().split('=');
+    result[k.trim()] = v.join('=').trim();
+  }
+  return result;
+}
+
+function toWav(pcm, sampleRate = 24000, channels = 1, bitDepth = 16) {
+  const dataSize = pcm.length;
+  const buf = Buffer.alloc(44 + dataSize);
+  buf.write('RIFF', 0);
+  buf.writeUInt32LE(36 + dataSize, 4);
+  buf.write('WAVE', 8);
+  buf.write('fmt ', 12);
+  buf.writeUInt32LE(16, 16);
+  buf.writeUInt16LE(1, 20);
+  buf.writeUInt16LE(channels, 22);
+  buf.writeUInt32LE(sampleRate, 24);
+  buf.writeUInt32LE(sampleRate * channels * (bitDepth / 8), 28);
+  buf.writeUInt16LE(channels * (bitDepth / 8), 32);
+  buf.writeUInt16LE(bitDepth, 34);
+  buf.write('data', 36);
+  buf.writeUInt32LE(dataSize, 40);
+  pcm.copy(buf, 44);
+  return buf;
+}
 
 // ─── LOGGING ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +103,89 @@ app.post('/voice/fallback', (req, res) => {
   }
 
   res.type('text/xml').send(twiml.toString());
+});
+
+// ─── BROWSER VOICE TEST ──────────────────────────────────────────────────────
+
+app.get('/voice/test', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../dashboard/voiceTest.html'));
+});
+
+app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, res) => {
+  const cookies = parseCookies(req);
+  let sessionId = cookies.gohlem_session;
+  let session;
+
+  if (sessionId && browserSessions.has(sessionId)) {
+    session = browserSessions.get(sessionId);
+  } else {
+    sessionId = randomUUID();
+    session = { engine: new ConversationEngine(MENU_PATH), initialized: false };
+    browserSessions.set(sessionId, session);
+  }
+
+  try {
+    const contentType = req.headers['content-type'] || 'audio/webm';
+    const sttRes = await fetch(
+      'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=en-US',
+      {
+        method: 'POST',
+        headers: { Authorization: `Token ${DG_KEY}`, 'Content-Type': contentType },
+        body: req.body,
+      }
+    );
+    if (!sttRes.ok) throw new Error(`STT ${sttRes.status}: ${await sttRes.text()}`);
+    const sttData = await sttRes.json();
+    const transcript = sttData.results?.channels?.[0]?.alternatives?.[0]?.transcript?.trim() || '';
+
+    if (!transcript) {
+      return res.status(400).json({ error: 'No speech detected — please try again.' });
+    }
+
+    log(null, `Voice test — heard: "${transcript}"`);
+
+    let greeting = null;
+    if (!session.initialized) {
+      session.initialized = true;
+      const openResult = await session.engine.open();
+      greeting = openResult.message;
+    }
+
+    const chatResult = await session.engine.chat(transcript);
+    const responseText = chatResult.message;
+    log(null, `Voice test — response: "${responseText.slice(0, 80)}"`);
+
+    const ttsRes = await fetch(
+      'https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=linear16&sample_rate=24000',
+      {
+        method: 'POST',
+        headers: { Authorization: `Token ${DG_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: responseText }),
+      }
+    );
+    if (!ttsRes.ok) throw new Error(`TTS ${ttsRes.status}: ${await ttsRes.text()}`);
+
+    const audio = toWav(Buffer.from(await ttsRes.arrayBuffer())).toString('base64');
+
+    const order = session.engine.cart.getOrder();
+    const cart = {
+      orderType: session.engine.cart.orderType || null,
+      items: order.items.map(i => ({
+        name: i.name,
+        quantity: i.quantity,
+        modifiers: i.modifiers.map(m => m.name),
+        lineTotal: i.lineTotal,
+      })),
+      total: order.total,
+    };
+
+    res.setHeader('Set-Cookie', `gohlem_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax`);
+    res.json({ transcript, response: responseText, audio, cart, greeting });
+
+  } catch (err) {
+    log(null, `Voice test error: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─── WEBSOCKET SERVER ─────────────────────────────────────────────────────────

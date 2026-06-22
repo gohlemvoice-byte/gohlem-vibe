@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Gohlem — Hot Bagels 2nd Street</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8f6f2;
+      color: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #2c1810;
+      color: #fff;
+      padding: 16px 20px;
+      text-align: center;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+    header p  { font-size: 0.8rem; opacity: 0.65; margin-top: 3px; }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    /* ── Conversation ── */
+    #conversation {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 180px;
+      max-height: 38vh;
+    }
+
+    .msg {
+      max-width: 82%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+    .msg .label {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.65;
+      margin-bottom: 4px;
+    }
+    .msg.gohlem {
+      background: #2c1810;
+      color: #fff;
+      border-bottom-left-radius: 4px;
+      align-self: flex-start;
+    }
+    .msg.customer {
+      background: #d4a847;
+      color: #1a1a1a;
+      border-bottom-right-radius: 4px;
+      align-self: flex-end;
+    }
+
+    /* ── Talk button ── */
+    .talk-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+    }
+
+    #talkBtn {
+      width: 148px;
+      height: 148px;
+      border-radius: 50%;
+      border: none;
+      background: #2c1810;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.3;
+      cursor: pointer;
+      transition: transform 0.1s ease, background 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 4px 24px rgba(44, 24, 16, 0.3);
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+    #talkBtn.recording {
+      transform: scale(0.92);
+      background: #b03020;
+      box-shadow: 0 2px 12px rgba(176, 48, 32, 0.45);
+    }
+    #talkBtn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    #status {
+      font-size: 0.85rem;
+      color: #777;
+      text-align: center;
+      min-height: 20px;
+    }
+    #status.recording  { color: #b03020; font-weight: 600; }
+    #status.processing { color: #2471a3; }
+
+    /* ── Cart ── */
+    #cart {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    #cart h3 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #888;
+      margin-bottom: 10px;
+    }
+    .cart-empty { color: #aaa; font-size: 0.85rem; text-align: center; padding: 6px 0; }
+    .order-type-badge {
+      display: inline-block;
+      background: #2c1810;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    #cart ul { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+    #cart li { display: flex; justify-content: space-between; align-items: flex-start; font-size: 0.88rem; gap: 8px; }
+    .item-info { flex: 1; }
+    .item-mods { font-size: 0.76rem; color: #999; margin-top: 2px; }
+    .item-price { font-weight: 600; white-space: nowrap; }
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #efefef;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Hot Bagels 2nd Street</h1>
+  <p>Voice Order Test</p>
+</header>
+
+<main>
+  <div id="conversation"></div>
+
+  <div class="talk-area">
+    <button id="talkBtn">Hold to Talk</button>
+    <p id="status">Ready</p>
+  </div>
+
+  <div id="cart">
+    <h3>Your Order</h3>
+    <p class="cart-empty">Cart is empty</p>
+  </div>
+</main>
+
+<script>
+  const btn    = document.getElementById('talkBtn');
+  const status = document.getElementById('status');
+  const convo  = document.getElementById('conversation');
+  const cartEl = document.getElementById('cart');
+
+  let mediaRecorder = null;
+  let audioChunks   = [];
+  let micStream     = null;
+  let busy          = false;
+
+  function setStatus(text, cls = '') {
+    status.textContent = text;
+    status.className = cls;
+  }
+
+  function addMessage(role, text) {
+    const div   = document.createElement('div');
+    div.className = `msg ${role}`;
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = role === 'customer' ? 'You' : 'Gohlem';
+    const p = document.createElement('p');
+    p.textContent = text;
+    div.appendChild(label);
+    div.appendChild(p);
+    convo.appendChild(div);
+    convo.scrollTop = convo.scrollHeight;
+  }
+
+  function updateCart(cart) {
+    if (!cart || !cart.items || cart.items.length === 0) {
+      cartEl.innerHTML = '<h3>Your Order</h3><p class="cart-empty">Cart is empty</p>';
+      return;
+    }
+    let html = '<h3>Your Order</h3>';
+    if (cart.orderType) {
+      html += `<span class="order-type-badge">${cart.orderType}</span>`;
+    }
+    html += '<ul>';
+    for (const item of cart.items) {
+      const mods = item.modifiers && item.modifiers.length
+        ? `<div class="item-mods">${item.modifiers.join(', ')}</div>` : '';
+      html += `<li>
+        <div class="item-info">${item.name} &times;${item.quantity}${mods}</div>
+        <span class="item-price">$${item.lineTotal.toFixed(2)}</span>
+      </li>`;
+    }
+    html += `</ul><div class="cart-total"><span>Total</span><span>$${cart.total.toFixed(2)}</span></div>`;
+    cartEl.innerHTML = html;
+  }
+
+  async function startRecording() {
+    if (busy) return;
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
+      mediaRecorder = new MediaRecorder(micStream, { mimeType });
+      audioChunks = [];
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.start(100);
+      btn.classList.add('recording');
+      btn.textContent = 'Release to Send';
+      setStatus('Recording…', 'recording');
+    } catch (err) {
+      setStatus('Microphone access denied', '');
+    }
+  }
+
+  async function stopAndSend() {
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+
+    await new Promise(resolve => {
+      mediaRecorder.onstop = resolve;
+      mediaRecorder.stop();
+    });
+    if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+
+    btn.classList.remove('recording');
+    btn.textContent = 'Hold to Talk';
+    btn.disabled = true;
+    busy = true;
+    setStatus('Thinking…', 'processing');
+
+    try {
+      const mimeType = mediaRecorder.mimeType || 'audio/webm';
+      const blob = new Blob(audioChunks, { type: mimeType });
+
+      const res  = await fetch('/voice/test', {
+        method: 'POST',
+        headers: { 'Content-Type': mimeType },
+        body: blob,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setStatus(data.error || 'Error — please try again', '');
+        btn.disabled = false;
+        busy = false;
+        return;
+      }
+
+      if (data.greeting) addMessage('gohlem', data.greeting);
+      addMessage('customer', data.transcript);
+      addMessage('gohlem', data.response);
+      updateCart(data.cart);
+
+      setStatus('Playing…', '');
+      const audio = new Audio('data:audio/wav;base64,' + data.audio);
+      const done = () => { setStatus('Ready', ''); btn.disabled = false; busy = false; };
+      audio.onended = done;
+      audio.onerror = done;
+      audio.play().catch(done);
+
+    } catch (err) {
+      setStatus('Error: ' + err.message, '');
+      btn.disabled = false;
+      busy = false;
+    }
+  }
+
+  // Mouse
+  btn.addEventListener('mousedown', startRecording);
+  btn.addEventListener('mouseup', stopAndSend);
+  btn.addEventListener('mouseleave', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') stopAndSend();
+  });
+
+  // Touch
+  btn.addEventListener('touchstart', e => { e.preventDefault(); startRecording(); });
+  btn.addEventListener('touchend',   e => { e.preventDefault(); stopAndSend(); });
+</script>
+</body>
+</html>
