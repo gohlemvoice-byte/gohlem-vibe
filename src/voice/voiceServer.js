@@ -127,7 +127,7 @@ app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, 
   try {
     const contentType = req.headers['content-type'] || 'audio/webm';
     const sttRes = await fetch(
-      'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&language=en-US',
+      'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=false&language=en',
       {
         method: 'POST',
         headers: { Authorization: `Token ${DG_KEY}`, 'Content-Type': contentType },

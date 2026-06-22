@@ -242,8 +242,9 @@
     if (busy) return;
     try {
       micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg';
-      mediaRecorder = new MediaRecorder(micStream, { mimeType });
+      const preferred = ['audio/webm', 'audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4'];
+      const mimeType = preferred.find(t => MediaRecorder.isTypeSupported(t)) || '';
+      mediaRecorder = new MediaRecorder(micStream, mimeType ? { mimeType } : {});
       audioChunks = [];
       mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
       mediaRecorder.start(100);
