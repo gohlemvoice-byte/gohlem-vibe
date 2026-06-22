@@ -86,7 +86,14 @@ class ConversationController {
       }
     }
 
-    // 3. Done-phrase while all required groups are satisfied → customer finished
+    // 3. Continuation phrase — customer is pausing/thinking, stay in AWAITING_MODIFIER
+    const isContinuation = /^(not yet|i'?m not done|wait|hold on|actually|one more thing|also)\b/i
+      .test(customerMessage.trim());
+    if (isContinuation) {
+      return { bypassMenuSearch: true, continuationPhrase: true, askedGroup: this.currentItem.askedGroup };
+    }
+
+    // 4. Done-phrase while all required groups are satisfied → customer finished
     const analysis  = this.menuEngine.analyzeModifiers(this.currentItem.menuItem);
     const satisfied = new Set(this.currentItem.modifiers.map(m => m.groupName));
     const requiredDone = analysis.mustAsk.every(g => satisfied.has(g.name));
@@ -97,7 +104,7 @@ class ConversationController {
       return { bypassMenuSearch: true, modifierMatched: null, customerDone: true, askedGroup: this.currentItem.askedGroup };
     }
 
-    // 4. No match
+    // 5. No match
     return { bypassMenuSearch: true, modifierMatched: null, askedGroup: this.currentItem.askedGroup };
   }
 
@@ -120,7 +127,7 @@ class ConversationController {
     }
 
     // Item confirmation
-    if (/(does that sound right|is that (right|correct)|sound(s)? good.*\?|shall i place|confirm (this|your) order|does that work)/i.test(msg)) {
+    if (/(does that sound right|is that (right|correct)|sound(s)? good.*\?|shall i|place (this|your) order|confirm (this|your) order|does that work)/i.test(msg)) {
       this.state = STATES.CONFIRMING;
       return;
     }

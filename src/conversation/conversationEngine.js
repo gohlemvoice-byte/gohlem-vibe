@@ -163,6 +163,31 @@ class ConversationEngine {
           this.controller.currentItem = null;
         }
 
+      } else if (inputResult.continuationPhrase) {
+        // Customer pausing/thinking mid-modifier collection — stay in AWAITING_MODIFIER
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[CUSTOMER PAUSING]',
+              `Customer said: "${userMessage}" — they are still deciding.`,
+              `We are waiting for their answer about "${inputResult.askedGroup.name}".`,
+              'Respond naturally (e.g. "Of course, take your time.") and gently re-ask the same question.',
+              '',
+              '[ORDER STATE]', orderContext,
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+        topMatch = this.controller.currentItem?.menuItem || null;
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+        intentResult = { ok: true, action: 'NONE' };
+
       } else {
         // No match — ask again
         messages = [
@@ -197,10 +222,20 @@ class ConversationEngine {
       // ── Normal ORDERING path ─────────────────────────────────────────────
       const orderContext = this._buildOrderContext();
 
+      const cartNonEmpty = !this.cart.isEmpty();
+
       // Done-phrase with non-empty cart → skip menu search, prompt order read-back
-      const isDonePhrase = !this.cart.isEmpty()
+      const isDonePhrase = cartNonEmpty
         && /^(that('?s)?( it| all)?|nothing(?: else)?|no(?: (?:more|thanks?|thank you))?|done|finished|nope)\b/i
             .test(userMessage.trim());
+
+      // "Keep only / just keep / remove the others" → remove unlisted items code-side
+      const keepOnlyPattern = /\b(just keep|keep only|remove (the )?(others?|rest|everything else)|cancel (the )?(others?|rest|everything else))\b/i;
+      const keepOnlyMatch   = cartNonEmpty && keepOnlyPattern.test(userMessage);
+
+      // Continuation phrase (thinking, pausing) → skip menu search, wait for input
+      const isContinuationPhrase = /^(not yet|i'?m not done|wait|hold on|actually|one more thing|also)\b/i
+        .test(userMessage.trim());
 
       if (isDonePhrase) {
         messages = [
@@ -212,6 +247,71 @@ class ConversationEngine {
               '[CUSTOMER DONE ORDERING]',
               'Customer has indicated they are finished ordering.',
               'Read back their complete order, state the total, and ask for confirmation.',
+              '',
+              '[ORDER STATE]', orderContext,
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+        intentResult = { ok: true, action: 'NONE' };
+
+      } else if (keepOnlyMatch) {
+        // Remove all items not named in the message
+        const msgLower  = userMessage.toLowerCase();
+        const active    = this.cart.getActiveItems();
+        const removed   = [];
+        const kept      = [];
+        for (const item of active) {
+          const words = item.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+          if (words.some(w => msgLower.includes(w))) {
+            kept.push(item.name);
+          } else {
+            this.cart.removeItem(item.cartItemId);
+            removed.push(item.name);
+          }
+        }
+
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[ITEMS REMOVED]',
+              removed.length > 0
+                ? `Removed from cart: ${removed.join(', ')}.`
+                : 'No items were removed (all named items matched).',
+              kept.length > 0
+                ? `Remaining in cart: ${kept.join(', ')}.`
+                : 'Cart is now empty.',
+              'Confirm what was removed and what remains.',
+              '',
+              '[ORDER STATE]', this._buildOrderContext(),
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+        intentResult = { ok: true, action: 'NONE' };
+
+      } else if (isContinuationPhrase) {
+        // Customer pausing/thinking — don't search menu, wait for their actual request
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[CUSTOMER CONTINUING]',
+              'Customer is still deciding or has more to add.',
+              'Respond naturally and wait for them to tell you what they want.',
               '',
               '[ORDER STATE]', orderContext,
               '',
@@ -412,7 +512,8 @@ class ConversationEngine {
         const instrDesc = item.specialInstructions ? ` | note: "${item.specialInstructions}"` : '';
         ctx += `  - cartItemId: ${item.cartItemId} | ${item.name} x${item.quantity} | $${item.lineTotal.toFixed(2)}${modDesc}${instrDesc}\n`;
       }
-      ctx += `Running total: $${this.cart.getTotal().toFixed(2)}`;
+      ctx += `Running total: $${this.cart.getTotal().toFixed(2)}\n`;
+      ctx += 'IMPORTANT: The cartItemId entries above are the ONLY confirmed items in this order. Do not reference, modify, or remove any item that does not appear in this list. If an item appears here, it exists — do not say it is unavailable.';
     }
 
     return ctx;
