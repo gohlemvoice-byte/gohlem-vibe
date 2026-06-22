@@ -21,7 +21,7 @@ const sharedResolver = new MenuResolver(menuEngine);
 
 const PORT = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview';
+const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17';
 const VOICE = 'alloy';
 const { restaurantInfo } = restaurantConfig;
 
@@ -269,131 +269,17 @@ fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
   let session = null;
   let openAiWs = null;
 
-  // ── Open OpenAI Realtime WebSocket ──────────────────────────────────────────
-  openAiWs = new WebSocket(REALTIME_URL, {
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      'OpenAI-Beta': 'realtime=v1',
-    },
-  });
-
-  // ── OpenAI events ────────────────────────────────────────────────────────────
-
-  openAiWs.on('open', () => {
-    log('OPENAI', 'Realtime WebSocket connected');
-  });
-
-  openAiWs.on('message', async (raw) => {
-    let event;
-    try { event = JSON.parse(raw); } catch { return; }
-
-    // ── Session created → send config ──────────────────────────────────────────
-    if (event.type === 'session.created') {
-      const sessionUpdate = {
-        type: 'session.update',
-        session: {
-          modalities: ['text', 'audio'],
-          instructions: SYSTEM_MESSAGE,
-          voice: VOICE,
-          input_audio_format: 'g711_ulaw',
-          output_audio_format: 'g711_ulaw',
-          input_audio_transcription: { model: 'whisper-1' },
-          turn_detection: {
-            type: 'server_vad',
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: 800,
-          },
-          tools: TOOLS,
-          tool_choice: 'auto',
-          temperature: 0.7,
-        },
-      };
-      openAiWs.send(JSON.stringify(sessionUpdate));
-
-      // Trigger initial greeting after config settles
-      setTimeout(() => {
-        if (openAiWs.readyState === WebSocket.OPEN) {
-          openAiWs.send(JSON.stringify({
-            type: 'response.create',
-            response: {
-              modalities: ['text', 'audio'],
-              instructions: 'Greet the customer warmly and ask: will this be for pickup or delivery?',
-            },
-          }));
-        }
-      }, 300);
-    }
-
-    // ── Audio from AI → forward to Twilio ─────────────────────────────────────
-    if ((event.type === 'response.audio.delta' || event.type === 'response.output_audio.delta')
-        && event.delta && session?.streamSid) {
-      try {
-        twilioSocket.send(JSON.stringify({
-          event: 'media',
-          streamSid: session.streamSid,
-          media: { payload: event.delta },
-        }));
-      } catch {}
-    }
-
-    // ── Barge-in: user spoke while AI was talking ─────────────────────────────
-    if (event.type === 'input_audio_buffer.speech_started' && session?.streamSid) {
-      try {
-        twilioSocket.send(JSON.stringify({ event: 'clear', streamSid: session.streamSid }));
-      } catch {}
-    }
-
-    // ── Tool call ─────────────────────────────────────────────────────────────
-    if (event.type === 'response.function_call_arguments.done' && session) {
-      let args = {};
-      try { args = JSON.parse(event.arguments || '{}'); } catch {}
-
-      const result = await executeTool(event.name, args, session);
-
-      openAiWs.send(JSON.stringify({
-        type: 'conversation.item.create',
-        item: {
-          type: 'function_call_output',
-          call_id: event.call_id,
-          output: JSON.stringify(result),
-        },
-      }));
-      openAiWs.send(JSON.stringify({ type: 'response.create' }));
-    }
-
-    // ── AI speech transcript (for log) ────────────────────────────────────────
-    if (event.type === 'response.audio_transcript.done' && session) {
-      session.transcript.push({ role: 'ai', text: event.transcript });
-    }
-
-    // ── Customer speech transcript ────────────────────────────────────────────
-    if (event.type === 'conversation.item.input_audio_transcription.completed' && session) {
-      session.transcript.push({ role: 'customer', text: event.transcript });
-    }
-
-    // ── Errors ────────────────────────────────────────────────────────────────
-    if (event.type === 'error') {
-      log(session?.callSid, `OpenAI error: ${JSON.stringify(event.error)}`);
-    }
-  });
-
-  openAiWs.on('error', (err) => {
-    log(session?.callSid, `OpenAI WS error: ${err.message}`);
-  });
-
-  openAiWs.on('close', () => {
-    log(session?.callSid, 'OpenAI WS closed');
-  });
-
   // ── Twilio events ─────────────────────────────────────────────────────────
+  // OpenAI WS is opened AFTER session is created from the 'start' event so
+  // that tool calls are never dispatched against a null session.
 
   twilioSocket.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
 
-    if (msg.event === 'connected') return; // handshake, ignore
+    if (msg.event === 'connected') return; // handshake only
 
+    // ── start: session created → NOW open OpenAI WS ──────────────────────────
     if (msg.event === 'start') {
       const { callSid, streamSid } = msg.start;
       session = {
@@ -405,11 +291,127 @@ fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
         transferring: false,
       };
       sessions.set(streamSid, session);
-      log(callSid, `Stream started (${streamSid})`);
+      log(callSid, `Stream started (${streamSid}) — connecting to OpenAI`);
+
+      // Open OpenAI Realtime WebSocket now that session is guaranteed to exist
+      openAiWs = new WebSocket(REALTIME_URL, {
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          'OpenAI-Beta': 'realtime=v1',
+        },
+      });
+
+      openAiWs.on('open', () => {
+        log(session.callSid, 'OpenAI Realtime connected');
+      });
+
+      openAiWs.on('message', async (data) => {
+        let event;
+        try { event = JSON.parse(data); } catch { return; }
+
+        // ── Session created → send config ────────────────────────────────────
+        if (event.type === 'session.created') {
+          const sessionUpdate = {
+            type: 'session.update',
+            session: {
+              modalities: ['text', 'audio'],
+              instructions: SYSTEM_MESSAGE,
+              voice: VOICE,
+              input_audio_format: 'g711_ulaw',
+              output_audio_format: 'g711_ulaw',
+              input_audio_transcription: { model: 'whisper-1' },
+              turn_detection: {
+                type: 'server_vad',
+                threshold: 0.5,
+                prefix_padding_ms: 300,
+                silence_duration_ms: 800,
+              },
+              tools: TOOLS,
+              tool_choice: 'auto',
+              temperature: 0.7,
+            },
+          };
+          openAiWs.send(JSON.stringify(sessionUpdate));
+
+          // Trigger initial greeting after config settles
+          setTimeout(() => {
+            if (openAiWs.readyState === WebSocket.OPEN) {
+              openAiWs.send(JSON.stringify({
+                type: 'response.create',
+                response: {
+                  modalities: ['text', 'audio'],
+                  instructions: 'Greet the customer warmly and ask: will this be for pickup or delivery?',
+                },
+              }));
+            }
+          }, 300);
+        }
+
+        // ── Audio from AI → forward to Twilio ────────────────────────────────
+        if ((event.type === 'response.audio.delta' || event.type === 'response.output_audio.delta')
+            && event.delta && session?.streamSid) {
+          try {
+            twilioSocket.send(JSON.stringify({
+              event: 'media',
+              streamSid: session.streamSid,
+              media: { payload: event.delta },
+            }));
+          } catch {}
+        }
+
+        // ── Barge-in: user spoke while AI was talking ────────────────────────
+        if (event.type === 'input_audio_buffer.speech_started' && session?.streamSid) {
+          try {
+            twilioSocket.send(JSON.stringify({ event: 'clear', streamSid: session.streamSid }));
+          } catch {}
+        }
+
+        // ── Tool call — session is always set here ───────────────────────────
+        if (event.type === 'response.function_call_arguments.done') {
+          let args = {};
+          try { args = JSON.parse(event.arguments || '{}'); } catch {}
+
+          const result = await executeTool(event.name, args, session);
+
+          openAiWs.send(JSON.stringify({
+            type: 'conversation.item.create',
+            item: {
+              type: 'function_call_output',
+              call_id: event.call_id,
+              output: JSON.stringify(result),
+            },
+          }));
+          openAiWs.send(JSON.stringify({ type: 'response.create' }));
+        }
+
+        // ── AI speech transcript (for log) ───────────────────────────────────
+        if (event.type === 'response.audio_transcript.done' && session) {
+          session.transcript.push({ role: 'ai', text: event.transcript });
+        }
+
+        // ── Customer speech transcript ───────────────────────────────────────
+        if (event.type === 'conversation.item.input_audio_transcription.completed' && session) {
+          session.transcript.push({ role: 'customer', text: event.transcript });
+        }
+
+        // ── Errors ───────────────────────────────────────────────────────────
+        if (event.type === 'error') {
+          log(session?.callSid, `OpenAI error: ${JSON.stringify(event.error)}`);
+        }
+      });
+
+      openAiWs.on('error', (err) => {
+        log(session?.callSid, `OpenAI WS error: ${err.message}`);
+      });
+
+      openAiWs.on('close', () => {
+        log(session?.callSid, 'OpenAI WS closed');
+      });
     }
 
+    // ── media: forward audio to OpenAI (openAiWs set after 'start') ──────────
     if (msg.event === 'media') {
-      if (openAiWs.readyState === WebSocket.OPEN) {
+      if (openAiWs && openAiWs.readyState === WebSocket.OPEN) {
         openAiWs.send(JSON.stringify({
           type: 'input_audio_buffer.append',
           audio: msg.media.payload,
@@ -436,7 +438,7 @@ fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
     logCallSummary(s);
     log(s.callSid, `Ended — ${reason}`);
 
-    try { openAiWs.close(); } catch {}
+    try { if (openAiWs) openAiWs.close(); } catch {}
   }
 });
 
