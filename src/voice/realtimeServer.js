@@ -230,8 +230,10 @@ async function executeTool(name, args, session) {
 // ─── FASTIFY SETUP ────────────────────────────────────────────────────────────
 
 const fastify = Fastify({ logger: false });
-fastify.register(require('@fastify/formbody'));
-fastify.register(require('@fastify/websocket'));
+
+async function main() {
+  await fastify.register(require('@fastify/formbody'));
+  await fastify.register(require('@fastify/websocket'));
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 
@@ -451,11 +453,12 @@ fastify.get('/voice/stream', { websocket: true }, (socket, _req) => {
 
 // ─── START ────────────────────────────────────────────────────────────────────
 
-fastify.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
-  if (err) { console.error(err); process.exit(1); }
+  await fastify.listen({ port: PORT, host: '0.0.0.0' });
   log(null, `Gohlem.ai Realtime server on port ${PORT}`);
   log(null, `Restaurant: ${restaurantInfo.name}`);
   log(null, `Model: gpt-4o-realtime-preview  Voice: ${VOICE}`);
   log(null, `Routes: POST /voice/inbound  GET /voice/stream  GET /health`);
-});
+}
+
+main().catch(console.error);
 
