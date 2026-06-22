@@ -21,7 +21,7 @@ const sharedResolver = new MenuResolver(menuEngine);
 
 const PORT = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17';
+const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview';
 const VOICE = 'alloy';
 const { restaurantInfo } = restaurantConfig;
 
