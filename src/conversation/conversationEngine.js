@@ -235,10 +235,6 @@ class ConversationEngine {
     return ctx;
   }
 
-  // Dynamic menu injection — Change 3.
-  // Only injects items relevant to the current query.
-  // Context is compact: name + category + required modifier GROUP NAMES only.
-  // The AI captures what the customer says verbatim; MenuResolver matches to options.
   _buildMenuContext(matches) {
     if (!matches.length) {
       return 'No matching items found for this query.';
@@ -251,12 +247,12 @@ class ConversationEngine {
 
       if (item.description) ctx += `  ${item.description}\n`;
 
-      // Inject required modifier GROUP NAMES so the AI knows what to ask.
-      // Do NOT list all modifier options — MenuResolver resolves those from data.
       const analysis = this.menuEngine.analyzeModifiers(item);
-      if (analysis.mustAsk.length > 0) {
-        const groupNames = analysis.mustAsk.map(g => g.name).join(', ');
-        ctx += `  Must ask before adding: ${groupNames}\n`;
+      for (const g of analysis.mustAsk) {
+        ctx += `  ${g.name} (required): ${g.options.map(o => o.name).join(', ')}\n`;
+      }
+      for (const g of analysis.shouldAsk) {
+        ctx += `  ${g.name} (optional): ${g.options.map(o => o.name).join(', ')}\n`;
       }
     }
 
