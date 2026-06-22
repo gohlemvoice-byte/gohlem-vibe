@@ -268,7 +268,7 @@ const sessions = new Map(); // streamSid → session
 
 // ─── WEBSOCKET BRIDGE ─────────────────────────────────────────────────────────
 
-fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
+fastify.get('/voice/stream', { websocket: true }, (socket, _req) => {
   let session = null;
   let openAiWs = null;
 
@@ -276,7 +276,7 @@ fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
   // OpenAI WS is opened AFTER session is created from the 'start' event so
   // that tool calls are never dispatched against a null session.
 
-  twilioSocket.on('message', (raw) => {
+  socket.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
 
@@ -358,7 +358,7 @@ fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
         if ((event.type === 'response.audio.delta' || event.type === 'response.output_audio.delta')
             && event.delta && session?.streamSid) {
           try {
-            twilioSocket.send(JSON.stringify({
+            socket.send(JSON.stringify({
               event: 'media',
               streamSid: session.streamSid,
               media: { payload: event.delta },
@@ -369,7 +369,7 @@ fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
         // ── Barge-in: user spoke while AI was talking ────────────────────────
         if (event.type === 'input_audio_buffer.speech_started' && session?.streamSid) {
           try {
-            twilioSocket.send(JSON.stringify({ event: 'clear', streamSid: session.streamSid }));
+            socket.send(JSON.stringify({ event: 'clear', streamSid: session.streamSid }));
           } catch {}
         }
 
@@ -431,8 +431,8 @@ fastify.get('/voice/stream', { websocket: true }, (twilioSocket, _req) => {
     }
   });
 
-  twilioSocket.on('close', () => teardown('WebSocket closed'));
-  twilioSocket.on('error', (err) => log(session?.callSid, `Twilio WS error: ${err.message}`));
+  socket.on('close', () => teardown('WebSocket closed'));
+  socket.on('error', (err) => log(session?.callSid, `Twilio WS error: ${err.message}`));
 
   // ── Teardown ───────────────────────────────────────────────────────────────
 
