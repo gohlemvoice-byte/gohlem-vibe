@@ -669,11 +669,10 @@ class ConversationEngine {
       if (item.description) ctx += `  ${item.description}\n`;
 
       const analysis = this.menuEngine.analyzeModifiers(item);
-      for (const g of analysis.mustAsk) {
-        ctx += `  ${g.name} (required): ${g.options.map(o => o.name).join(', ')}\n`;
-      }
-      for (const g of analysis.shouldAsk) {
-        ctx += `  ${g.name} (optional): ${g.options.map(o => o.name).join(', ')}\n`;
+      const allGroups = [...analysis.mustAsk, ...analysis.shouldAsk, ...analysis.willAssume];
+      for (const g of allGroups) {
+        const req = g.required ? 'required' : 'optional';
+        ctx += `  ${g.name} (${req}): ${g.options.map(o => o.name).join(', ')}\n`;
       }
     }
 
