@@ -7,7 +7,6 @@ const WebSocket = require('ws');
 const { twiml: TwilioTwiml } = require('twilio');
 const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
-const { randomUUID } = require('crypto');
 
 const ConversationEngine = require('../conversation/conversationEngine');
 const restaurantConfig = require('../config/restaurantConfig');
@@ -24,19 +23,16 @@ const deepgramClient = createClient(DG_KEY);
 
 // callSid → session
 const sessions = new Map();
-// sessionId cookie → browser test session
+// sessionId → browser test session  { engine, lastActivity }
 const browserSessions = new Map();
 
-function parseCookies(req) {
-  const result = {};
-  const header = req.headers.cookie;
-  if (!header) return result;
-  for (const pair of header.split(';')) {
-    const [k, ...v] = pair.trim().split('=');
-    result[k.trim()] = v.join('=').trim();
+// Purge browser sessions idle for more than 30 minutes
+setInterval(() => {
+  const cutoff = Date.now() - 30 * 60 * 1000;
+  for (const [id, s] of browserSessions) {
+    if (s.lastActivity < cutoff) browserSessions.delete(id);
   }
-  return result;
-}
+}, 5 * 60 * 1000);
 
 function toWav(pcm, sampleRate = 24000, channels = 1, bitDepth = 16) {
   const dataSize = pcm.length;
@@ -111,18 +107,33 @@ app.get('/voice/test', (_req, res) => {
   res.sendFile(path.join(__dirname, '../dashboard/voiceTest.html'));
 });
 
-app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, res) => {
-  const cookies = parseCookies(req);
-  let sessionId = cookies.gohlem_session;
-  let session;
+// Open a new browser session and return the greeting.
+// Client generates a fresh UUID on every page load (or "Start New Order" click).
+app.post('/voice/test/open', express.json(), async (req, res) => {
+  const sessionId = req.body?.sessionId;
+  if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
 
-  if (sessionId && browserSessions.has(sessionId)) {
-    session = browserSessions.get(sessionId);
-  } else {
-    sessionId = randomUUID();
-    session = { engine: new ConversationEngine(MENU_PATH), initialized: false };
-    browserSessions.set(sessionId, session);
+  const session = { engine: new ConversationEngine(MENU_PATH), lastActivity: Date.now() };
+  browserSessions.set(sessionId, session);
+
+  try {
+    const openResult = await session.engine.open();
+    log(null, `Voice test — new session ${sessionId.slice(-8)}`);
+    res.json({ greeting: openResult.message });
+  } catch (err) {
+    log(null, `Voice test open error: ${err.message}`);
+    res.status(500).json({ error: err.message });
   }
+});
+
+app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, res) => {
+  const sessionId = req.headers['x-session-id'];
+  const session   = sessionId && browserSessions.get(sessionId);
+
+  if (!session) {
+    return res.status(400).json({ error: 'Session not found. Please start a new order.' });
+  }
+  session.lastActivity = Date.now();
 
   try {
     const contentType = req.headers['content-type'] || 'audio/webm';
@@ -143,13 +154,6 @@ app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, 
     }
 
     log(null, `Voice test — heard: "${transcript}"`);
-
-    let greeting = null;
-    if (!session.initialized) {
-      session.initialized = true;
-      const openResult = await session.engine.open();
-      greeting = openResult.message;
-    }
 
     const chatResult = await session.engine.chat(transcript);
     const responseText = chatResult.message;
@@ -179,8 +183,7 @@ app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, 
       total: order.total,
     };
 
-    res.setHeader('Set-Cookie', `gohlem_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax`);
-    res.json({ transcript, response: responseText, audio, cart, greeting });
+    res.json({ transcript, response: responseText, audio, cart });
 
   } catch (err) {
     log(null, `Voice test error: ${err.message}`);

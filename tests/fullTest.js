@@ -60,8 +60,8 @@ async function runAll() {
   console.log('\n── 1. ORIGINAL TESTS ──────────────────────────────────────────');
   // ═══════════════════════════════════════════════════════════
 
-  await test('1.  Greeting says "Bravo"', [], ({ greeting }) => ({
-    pass:   greeting.includes('Bravo'),
+  await test('1.  Greeting says "Charlie"', [], ({ greeting }) => ({
+    pass:   greeting.includes('Charlie'),
     reason: `Greeting was: "${greeting}"`,
   }));
 
@@ -323,12 +323,12 @@ async function runAll() {
   await test('27. 7 items then remove one → correct item removed', [
     'pickup',
     'I want a tuna sandwich on everything bagel',
-    'a cream cheese sandwich on sesame bagel',
-    'a lox sandwich on plain bagel',
-    'a coffee',
-    'a chocolate chip muffin',
-    'an orange juice',
-    'and a plain bagel',
+    'add a cream cheese sandwich on sesame bagel',
+    'add a lox sandwich on plain bagel',
+    'add a coffee',
+    'add a chocolate chip muffin',
+    'add an orange juice',
+    'add a plain bagel',
     'remove the cream cheese sandwich',
   ], ({ engine }) => {
     if (hasItem(engine, 'cream cheese')) return { pass: false, reason: 'Cream cheese was not removed' };

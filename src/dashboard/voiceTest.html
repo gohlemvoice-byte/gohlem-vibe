@@ -122,6 +122,22 @@
     #status.recording  { color: #b03020; font-weight: 600; }
     #status.processing { color: #2471a3; }
 
+    #newOrderBtn {
+      background: transparent;
+      border: 1px solid #ccc;
+      color: #888;
+      font-size: 0.78rem;
+      padding: 6px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    #newOrderBtn:hover {
+      background: #f0e8d0;
+      border-color: #2c1810;
+      color: #2c1810;
+    }
+
     /* ── Cart ── */
     #cart {
       background: #fff;
@@ -176,8 +192,9 @@
   <div id="conversation"></div>
 
   <div class="talk-area">
-    <button id="talkBtn">Hold to Talk</button>
-    <p id="status">Ready</p>
+    <button id="talkBtn" disabled>Hold to Talk</button>
+    <p id="status">Connecting…</p>
+    <button id="newOrderBtn">Start New Order</button>
   </div>
 
   <div id="cart">
@@ -187,15 +204,19 @@
 </main>
 
 <script>
-  const btn    = document.getElementById('talkBtn');
-  const status = document.getElementById('status');
-  const convo  = document.getElementById('conversation');
-  const cartEl = document.getElementById('cart');
+  const btn      = document.getElementById('talkBtn');
+  const status   = document.getElementById('status');
+  const convo    = document.getElementById('conversation');
+  const cartEl   = document.getElementById('cart');
+  const newOrder = document.getElementById('newOrderBtn');
 
   let mediaRecorder = null;
   let audioChunks   = [];
   let micStream     = null;
   let busy          = false;
+
+  // Fresh UUID each page load — no cookie, no persistence across refreshes
+  let sessionId = crypto.randomUUID();
 
   function setStatus(text, cls = '') {
     status.textContent = text;
@@ -238,6 +259,35 @@
     cartEl.innerHTML = html;
   }
 
+  async function initSession() {
+    btn.disabled = true;
+    setStatus('Connecting…', '');
+    try {
+      const res = await fetch('/voice/test/open', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ sessionId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to connect');
+      addMessage('gohlem', data.greeting);
+      setStatus('Ready', '');
+      btn.disabled = false;
+    } catch (err) {
+      setStatus('Could not connect: ' + err.message, '');
+    }
+  }
+
+  newOrder.addEventListener('click', async () => {
+    if (busy) return;
+    sessionId = crypto.randomUUID();
+    convo.innerHTML = '';
+    updateCart(null);
+    await initSession();
+  });
+
+  // ── Recording ──────────────────────────────────────────────────────────────
+
   async function startRecording() {
     if (busy) return;
     try {
@@ -275,10 +325,10 @@
       const mimeType = mediaRecorder.mimeType || 'audio/webm';
       const blob = new Blob(audioChunks, { type: mimeType });
 
-      const res  = await fetch('/voice/test', {
-        method: 'POST',
-        headers: { 'Content-Type': mimeType },
-        body: blob,
+      const res = await fetch('/voice/test', {
+        method:  'POST',
+        headers: { 'Content-Type': mimeType, 'X-Session-Id': sessionId },
+        body:    blob,
       });
       const data = await res.json();
 
@@ -289,7 +339,6 @@
         return;
       }
 
-      if (data.greeting) addMessage('gohlem', data.greeting);
       addMessage('customer', data.transcript);
       addMessage('gohlem', data.response);
       updateCart(data.cart);
@@ -318,6 +367,9 @@
   // Touch
   btn.addEventListener('touchstart', e => { e.preventDefault(); startRecording(); });
   btn.addEventListener('touchend',   e => { e.preventDefault(); stopAndSend(); });
+
+  // Auto-init on page load
+  initSession();
 </script>
 </body>
 </html>
