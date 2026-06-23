@@ -60,8 +60,8 @@ async function runAll() {
   console.log('\n── 1. ORIGINAL TESTS ──────────────────────────────────────────');
   // ═══════════════════════════════════════════════════════════
 
-  await test('1.  Greeting says "Charlie"', [], ({ greeting }) => ({
-    pass:   greeting.includes('Charlie'),
+  await test('1.  Greeting says "Delta"', [], ({ greeting }) => ({
+    pass:   greeting.includes('Delta'),
     reason: `Greeting was: "${greeting}"`,
   }));
 

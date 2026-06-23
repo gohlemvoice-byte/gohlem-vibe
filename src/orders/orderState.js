@@ -262,6 +262,8 @@ UPDATE_ITEM   — customer is changing a modifier or quantity on something alrea
 SET_ORDER_TYPE — customer said pickup or delivery (set itemName to "pickup" or "delivery")
 NONE          — no cart action: questions, clarifications, greetings, confirmations
 
+MANDATORY RULE: You MUST use search_menu before EVERY add_to_cart. The MENU SEARCH RESULTS provided each turn are your search results. Only use item names exactly as they appear in MENU SEARCH RESULTS. Never invent item names. If you set action to ADD_ITEM, the itemName must be copied verbatim from the MENU SEARCH RESULTS for this turn.
+
 MODIFIER RULES:
 modifiers is an array of exactly what the customer said, verbatim: "sesame bagel", "not toasted", "no eggplant", "extra feta".
 Do NOT try to match modifiers to menu option names. Do NOT include prices. Just capture what was said.

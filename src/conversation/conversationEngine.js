@@ -20,6 +20,9 @@ class ConversationEngine {
     this.systemPrompt = buildSystemPrompt(restaurantConfig);
     this.history      = [];
     this.controller   = new ConversationController(this.menuEngine);
+    // Per-turn search enforcement state
+    this._searchCalledThisTurn = false;
+    this._lastSearchResults    = [];
   }
 
   // ─── OPEN CALL ────────────────────────────────────────────────────────────
@@ -54,6 +57,10 @@ class ConversationEngine {
   // ─── CHAT TURN ────────────────────────────────────────────────────────────
 
   async chat(userMessage) {
+    // Reset per-turn search enforcement state
+    this._searchCalledThisTurn = false;
+    this._lastSearchResults    = [];
+
     // Order type detection — code-side, never rely on AI action
     if (!this.cart.orderType) {
       const lower = userMessage.toLowerCase();
@@ -412,6 +419,13 @@ class ConversationEngine {
       const comboContext = this._buildComboContext(combo);
       topMatch = matches[0] || null;
 
+      // Record which item names are valid for this turn
+      this._searchCalledThisTurn = true;
+      this._lastSearchResults = [...new Set([
+        ...matches.map(m => m.name),
+        ...(combo?.item ? [combo.item.name] : []),
+      ])];
+
       if (combo && combo.type === 'split') {
         splitResults = combo.instances.map(inst => {
           const splitIntent = {
@@ -446,6 +460,31 @@ class ConversationEngine {
       intentResult = splitResults
         ? { ok: true, action: 'SPLIT', results: splitResults }
         : this._processIntent(parsed.intent);
+
+      // Search enforcement: if AI named an item not in search results, retry once
+      if (!intentResult.ok && intentResult.searchEnforced) {
+        const retryMessages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[MANDATORY ENFORCEMENT ERROR]',
+              intentResult.error,
+              'You must only use item names that appear in the MENU SEARCH RESULTS below.',
+              '',
+              '[MENU SEARCH RESULTS]', menuContext,
+              '',
+              '[ORDER STATE]', orderContext,
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+        raw    = await this._callOpenAI(retryMessages);
+        parsed = this._parseResponse(raw);
+        intentResult = this._processIntent(parsed.intent);
+      }
 
       // Use resolved item as topMatch so detectStateFromAIResponse can find
       // the right modifier groups whether the item was added or is still pending
@@ -494,6 +533,24 @@ class ConversationEngine {
     }
 
     if (action === 'ADD_ITEM') {
+      // Enforce: itemName must match one of the names returned by search_menu this turn
+      if (this._searchCalledThisTurn) {
+        const nameMatch = this._lastSearchResults.some(
+          n => n.toLowerCase() === (itemName || '').toLowerCase().trim()
+        );
+        if (!nameMatch) {
+          return {
+            ok: false,
+            action,
+            searchEnforced: true,
+            error: `"${itemName}" was not in the search results for this turn.` +
+              (this._lastSearchResults.length > 0
+                ? ` You must call add_to_cart with one of these names: ${this._lastSearchResults.join(', ')}`
+                : ' No items matched the search. Do not add anything.'),
+          };
+        }
+      }
+
       const resolved = this.resolver.resolve({ itemName, modifiers, quantity, specialInstructions });
       if (!resolved.resolved) {
         return { ok: false, action, error: resolved.reason };
@@ -691,9 +748,11 @@ class ConversationEngine {
   }
 
   reset() {
-    this.cart       = new OrderCart();
-    this.history    = [];
-    this.controller = new ConversationController(this.menuEngine);
+    this.cart                   = new OrderCart();
+    this.history                = [];
+    this.controller             = new ConversationController(this.menuEngine);
+    this._searchCalledThisTurn  = false;
+    this._lastSearchResults     = [];
   }
 }
 
