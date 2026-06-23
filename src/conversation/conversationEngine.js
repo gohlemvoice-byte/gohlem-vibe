@@ -571,6 +571,9 @@ class ConversationEngine {
         quantity || 1,
         resolved.specialInstructions
       );
+      // Reset enforcement so a second item in the same turn doesn't need a new search
+      this._searchCalledThisTurn = false;
+      this._lastSearchResults = [];
       return { ok: true, action, cartItemId, name: resolved.menuItem.name, menuItem: resolved.menuItem };
     }
 
