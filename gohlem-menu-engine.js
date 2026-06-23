@@ -40,7 +40,7 @@ class GohlemMenuEngine {
         index.push({
           ...item,
           category: category.name,
-          // Build search tokens: name words + category words
+          nameTokens: this._tokenize(item.name),
           searchTokens: this._tokenize(`${item.name} ${category.name} ${item.description || ''}`)
         });
       }
@@ -63,29 +63,47 @@ class GohlemMenuEngine {
 
   findItems(query, maxResults = 5) {
     const queryTokens = this._tokenize(query);
-    
+
     if (queryTokens.length === 0) return [];
 
     const scored = this.itemIndex
       .filter(item => item.available !== false)
       .map(item => {
         let score = 0;
-        
-        // Exact name match — highest score
+
+        // Exact name match
         if (item.name.toLowerCase() === query.toLowerCase()) score += 100;
-        
-        // Name contains full query
+
+        // Name contains full query string
         if (item.name.toLowerCase().includes(query.toLowerCase())) score += 50;
-        
-        // Token matching — each query word found in item tokens
+
+        const nameTokenSet = new Set(item.nameTokens);
+        // descTokenSet = tokens that exist in searchTokens but NOT in nameTokens
+        const descTokenSet = new Set(item.searchTokens.filter(t => !nameTokenSet.has(t)));
+
+        let nameMatchCount = 0;
         for (const qToken of queryTokens) {
-          for (const iToken of item.searchTokens) {
-            if (iToken === qToken) score += 10;
-            else if (iToken.includes(qToken) && qToken.length > 3) score += 5;
-            else if (qToken.includes(iToken) && iToken.length > 3) score += 3;
+          let nameHit = false;
+          for (const nToken of nameTokenSet) {
+            if (nToken === qToken)                             { score += 15; nameHit = true; nameMatchCount++; break; }
+            else if (nToken.includes(qToken) && qToken.length > 3) { score += 8;  nameHit = true; nameMatchCount++; break; }
+            else if (qToken.includes(nToken) && nToken.length > 3) { score += 5;  nameHit = true; nameMatchCount++; break; }
+          }
+          if (!nameHit) {
+            for (const dToken of descTokenSet) {
+              if (dToken === qToken)                             { score += 3; break; }
+              else if (dToken.includes(qToken) && qToken.length > 3) { score += 2; break; }
+              else if (qToken.includes(dToken) && dToken.length > 3) { score += 1; break; }
+            }
           }
         }
-        
+
+        // Bonus: proportion of query tokens matched in name
+        if (nameMatchCount > 0) score += Math.round((nameMatchCount / queryTokens.length) * 25);
+
+        // Bonus: every query token matched in name (e.g. "tuna sandwich" → Tuna Sandwich)
+        if (nameMatchCount === queryTokens.length && queryTokens.length > 0) score += 30;
+
         return { item, score };
       })
       .filter(r => r.score > 0)
@@ -147,7 +165,10 @@ class GohlemMenuEngine {
 
     const topCandidates = this.findItems(itemPart || cleanedQuery, 8);
     for (const candidate of topCandidates) {
-      if (cleanedQuery.startsWith(candidate.name.toLowerCase())) {
+      const cName = candidate.name.toLowerCase();
+      // Match if query starts with the item name OR (for short queries) item name starts with query
+      if (cleanedQuery.startsWith(cName) ||
+          (searchTokens.length <= 2 && cName.startsWith(cleanedQuery))) {
         return { type: 'direct', item: candidate, quantity: detectedQuantity };
       }
     }
