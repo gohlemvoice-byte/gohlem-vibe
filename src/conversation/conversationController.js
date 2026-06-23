@@ -66,6 +66,11 @@ class ConversationController {
       return { bypassMenuSearch: false };
     }
 
+    // Explicit cart commands (remove, cancel, correction) skip modifier collection entirely
+    if (/^(remove|cancel|delete|take off|i don'?t want|change that|start over)\b/i.test(customerMessage.trim())) {
+      return { bypassMenuSearch: false };
+    }
+
     // 1. Try current asked group first
     const matched = this._matchOption(customerMessage, this.currentItem.askedGroup.options);
     if (matched) {
@@ -86,8 +91,8 @@ class ConversationController {
       }
     }
 
-    // 3. Continuation phrase — customer is pausing/thinking, stay in AWAITING_MODIFIER
-    const isContinuation = /^(not yet|i'?m not done|wait|hold on|actually|one more thing|also)\b/i
+    // 3. Continuation phrase — only when the phrase IS the entire message
+    const isContinuation = /^(not yet|i'?m not done|wait|hold on|actually|one more thing|also)[.!,?]*$/i
       .test(customerMessage.trim());
     if (isContinuation) {
       return { bypassMenuSearch: true, continuationPhrase: true, askedGroup: this.currentItem.askedGroup };

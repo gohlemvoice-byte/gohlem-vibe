@@ -224,6 +224,23 @@ class ConversationEngine {
 
       const cartNonEmpty = !this.cart.isEmpty();
 
+      // "remove that/it/this" → remove most recently added item code-side
+      const removeThatPat   = /^(remove|cancel|take off)\s+(that|it|this|the last one)[.!?]*$/i;
+      const removeThatMatch = cartNonEmpty && removeThatPat.test(userMessage.trim());
+
+      // "remove the [item name]" → code-side named-item removal (bypasses combo ADD context)
+      const REMOVE_GENERIC = new Set(['sandwich', 'bagel', 'wrap', 'bowl', 'item', 'order', 'the', 'and', 'with', 'from', 'please', 'that', 'this', 'one']);
+      const removeNamedPat = /^(?:please\s+)?(?:remove|cancel|delete)\s+(?:the\s+|my\s+)?(.+?)[.!?]*$/i;
+      const removeNamedExec = cartNonEmpty && !removeThatMatch && removeNamedPat.exec(userMessage.trim());
+      const removeNamedItem = removeNamedExec ? (() => {
+        const words = removeNamedExec[1].toLowerCase().split(/\s+/)
+          .filter(w => w.length > 2 && !REMOVE_GENERIC.has(w));
+        if (words.length === 0) return null;
+        return this.cart.getActiveItems().find(i =>
+          words.some(w => i.name.toLowerCase().includes(w))
+        ) || null;
+      })() : null;
+
       // Done-phrase with non-empty cart → skip menu search, prompt order read-back
       const isDonePhrase = cartNonEmpty
         && /^(that('?s)?( it| all)?|nothing(?: else)?|no(?: (?:more|thanks?|thank you))?|done|finished|nope)\b/i
@@ -233,11 +250,67 @@ class ConversationEngine {
       const keepOnlyPattern = /\b(just keep|keep only|remove (the )?(others?|rest|everything else)|cancel (the )?(others?|rest|everything else))\b/i;
       const keepOnlyMatch   = cartNonEmpty && keepOnlyPattern.test(userMessage);
 
-      // Continuation phrase (thinking, pausing) → skip menu search, wait for input
-      const isContinuationPhrase = /^(not yet|i'?m not done|wait|hold on|actually|one more thing|also)\b/i
+      // Continuation phrase (thinking, pausing) — only when the phrase IS the entire message
+      const isContinuationPhrase = /^(not yet|i'?m not done|wait|hold on|actually|one more thing|also)[.!,?]*$/i
         .test(userMessage.trim());
 
-      if (isDonePhrase) {
+      if (removeThatMatch) {
+        // Remove the most recently added cart item
+        const lastItem = this.cart.getActiveItems().slice(-1)[0];
+        this.cart.removeItem(lastItem.cartItemId);
+
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[ITEM REMOVED]',
+              `"${lastItem.name}" has been removed from the order.`,
+              'Confirm the removal briefly.',
+              '',
+              '[ORDER STATE]', this._buildOrderContext(),
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+        intentResult = { ok: true, action: 'NONE' };
+
+      } else if (removeNamedItem) {
+        // Remove identified cart item by name, bypassing combo ADD confusion
+        this.cart.removeItem(removeNamedItem.cartItemId);
+        // If this was the item being built in AWAITING_MODIFIER, clear the pending item
+        if (this.controller.currentItem?.menuItem?.id === removeNamedItem.menuItemId) {
+          this.controller.currentItem = null;
+          this.controller.state = 'ORDERING';
+        }
+
+        messages = [
+          { role: 'system', content: this.systemPrompt },
+          ...this.history,
+          {
+            role: 'user',
+            content: [
+              '[ITEM REMOVED]',
+              `"${removeNamedItem.name}" has been removed from the order.`,
+              'Confirm the removal briefly.',
+              '',
+              '[ORDER STATE]', this._buildOrderContext(),
+              '',
+              '[CUSTOMER MESSAGE]', userMessage,
+            ].join('\n'),
+          },
+        ];
+
+        raw    = await this._callOpenAI(messages);
+        parsed = this._parseResponse(raw);
+        intentResult = { ok: true, action: 'NONE' };
+
+      } else if (isDonePhrase) {
         messages = [
           { role: 'system', content: this.systemPrompt },
           ...this.history,
@@ -261,13 +334,20 @@ class ConversationEngine {
 
       } else if (keepOnlyMatch) {
         // Remove all items not named in the message
-        const msgLower  = userMessage.toLowerCase();
-        const active    = this.cart.getActiveItems();
-        const removed   = [];
-        const kept      = [];
+        // Filter out generic nouns that appear in many item names so they don't produce false keeps
+        const GENERIC = new Set(['sandwich', 'bagel', 'wrap', 'bowl', 'item', 'order', 'the', 'and', 'with', 'from', 'also', 'for', 'one', 'two', 'please', 'just', 'keep', 'only', 'others', 'rest']);
+        const msgLower = userMessage.toLowerCase();
+        const active   = this.cart.getActiveItems();
+        const removed  = [];
+        const kept     = [];
         for (const item of active) {
-          const words = item.name.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-          if (words.some(w => msgLower.includes(w))) {
+          const words = item.name.toLowerCase().split(/\s+/)
+            .filter(w => w.length > 2 && !GENERIC.has(w));
+          // If no distinguishing words remain, fall back to full name substring match
+          const named = words.length > 0
+            ? words.some(w => msgLower.includes(w))
+            : msgLower.includes(item.name.toLowerCase());
+          if (named) {
             kept.push(item.name);
           } else {
             this.cart.removeItem(item.cartItemId);
