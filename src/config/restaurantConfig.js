@@ -5,7 +5,7 @@ const hotBagels = {
     pickupHours: 'Monday through Sunday, 6am to 8pm',
     deliveryHours: 'Monday through Sunday, 7am to 6pm',
     orderTypes: ['pickup', 'delivery'],
-    version: 'Golf',
+    version: 'Hotel',
   },
 
   specialTerminology: `

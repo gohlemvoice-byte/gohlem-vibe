@@ -68,14 +68,21 @@ class MenuResolver {
       for (const option of group.options) {
         const optTokens = this._tokenize(option.name);
         let score = 0;
-        for (const t of tokens) {
-          if (t.length <= 2) continue;
-          for (const ot of optTokens) {
-            if (ot === t) score += 10;
-            else if (ot.includes(t) && t.length > 3) score += 5;
-            else if (t.includes(ot) && ot.length > 3) score += 3;
+
+        // Single-word option (e.g. "Red", "Large") — match if that word appears anywhere in modifier text
+        if (optTokens.length === 1 && tokens.includes(optTokens[0])) {
+          score = 15;
+        } else {
+          for (const t of tokens) {
+            if (t.length <= 2) continue;
+            for (const ot of optTokens) {
+              if (ot === t) score += 10;
+              else if (ot.includes(t) && t.length > 3) score += 5;
+              else if (t.includes(ot) && ot.length > 3) score += 3;
+            }
           }
         }
+
         if (score >= 5 && score > bestScore) {
           bestScore = score;
           bestOption = { ...option, groupName: group.name };
