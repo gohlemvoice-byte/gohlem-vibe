@@ -184,7 +184,7 @@
 <body>
 
 <header>
-  <h1>Hot Bagels 2nd Street</h1>
+  <h1 id="restaurantName">Gohlem.ai</h1>
   <p>Voice Order Test</p>
 </header>
 
@@ -250,8 +250,10 @@
     for (const item of cart.items) {
       const mods = item.modifiers && item.modifiers.length
         ? `<div class="item-mods">${item.modifiers.join(', ')}</div>` : '';
+      const note = item.specialInstructions
+        ? `<div class="item-mods" style="font-style:italic;color:#b07020">📝 ${item.specialInstructions}</div>` : '';
       html += `<li>
-        <div class="item-info">${item.name} &times;${item.quantity}${mods}</div>
+        <div class="item-info">${item.name} &times;${item.quantity}${mods}${note}</div>
         <span class="item-price">$${item.lineTotal.toFixed(2)}</span>
       </li>`;
     }
@@ -270,6 +272,7 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to connect');
+      if (data.restaurantName) document.getElementById('restaurantName').textContent = data.restaurantName;
       addMessage('gohlem', data.greeting);
       setStatus('Ready', '');
       btn.disabled = false;

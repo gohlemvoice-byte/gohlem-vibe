@@ -118,7 +118,7 @@ app.post('/voice/test/open', express.json(), async (req, res) => {
   try {
     const openResult = await session.engine.open();
     log(null, `Voice test — new session ${sessionId.slice(-8)}`);
-    res.json({ greeting: openResult.message });
+    res.json({ greeting: openResult.message, restaurantName: restaurantConfig.restaurantInfo.name });
   } catch (err) {
     log(null, `Voice test open error: ${err.message}`);
     res.status(500).json({ error: err.message });
@@ -175,10 +175,12 @@ app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, 
     const order = session.engine.cart.getOrder();
     const cart = {
       orderType: session.engine.cart.orderType || null,
+      restaurantName: restaurantConfig.restaurantInfo.name,
       items: order.items.map(i => ({
         name: i.name,
         quantity: i.quantity,
         modifiers: i.modifiers.map(m => m.name),
+        specialInstructions: i.specialInstructions || '',
         lineTotal: i.lineTotal,
       })),
       total: order.total,
