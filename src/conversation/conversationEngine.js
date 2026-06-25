@@ -74,8 +74,12 @@ class ConversationEngine {
     while (iterations < MAX_TOOL_ITERATIONS) {
       iterations++;
 
-      // Keep last 20 messages to limit token usage per API call
-      const trimmedHistory = this.history.slice(-20);
+      // Keep last 12 messages to limit token usage per API call.
+      // Never cut inside a tool exchange: start at the first user message boundary
+      // so we never send orphaned tool messages without their preceding tool_calls.
+      let trimmedHistory = this.history.slice(-12);
+      const firstUserIdx = trimmedHistory.findIndex(m => m.role === 'user');
+      if (firstUserIdx > 0) trimmedHistory = trimmedHistory.slice(firstUserIdx);
 
       const res = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -191,6 +195,7 @@ CRITICAL TOOL RULES:
 6. If add_to_cart returns error RESTRICTION_CATERING — inform the customer about the 24-48 hour advance notice requirement.
 7. After two search failures for the same item — offer to connect the customer with a human.
 8. NEVER tell a customer an item is not on the menu without calling search_menu first. If a customer asks "do you have espresso?" or "what hot drinks do you have?" — call search_menu("espresso") or search_menu("hot drinks") BEFORE answering. Never deny a menu item from memory.
+9. Only call get_cart() when: (a) the customer has said they are done and you need to read back the full order, or (b) you need a cart_item_id for an update or removal. Do NOT call get_cart() after every item add — the add_to_cart response already confirms what was added.
 
 CONVERSATION FLOW:
 1. Greet and ask: pickup or delivery?
