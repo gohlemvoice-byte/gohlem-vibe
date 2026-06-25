@@ -135,7 +135,9 @@ app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, 
   session.lastActivity = Date.now();
 
   try {
-    const contentType = req.headers['content-type'] || 'audio/webm';
+    // Strip codec params — Deepgram wants "audio/webm" not "audio/webm;codecs=opus"
+    const rawType = req.headers['content-type'] || 'audio/webm';
+    const contentType = rawType.split(';')[0].trim();
     const sttRes = await fetch(
       'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=false&language=en',
       {
