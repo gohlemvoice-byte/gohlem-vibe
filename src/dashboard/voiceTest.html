@@ -138,6 +138,37 @@
       color: #2c1810;
     }
 
+    /* ── Restaurant selector ── */
+    .restaurant-selector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .restaurant-selector label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #888;
+      white-space: nowrap;
+    }
+    #restaurantSelect {
+      flex: 1;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.88rem;
+      color: #1a1a1a;
+      background: #fafafa;
+      cursor: pointer;
+    }
+    #restaurantSelect:focus { outline: 2px solid #2c1810; }
+
     /* ── Cart ── */
     #cart {
       background: #fff;
@@ -189,6 +220,14 @@
 </header>
 
 <main>
+  <div class="restaurant-selector">
+    <label for="restaurantSelect">Restaurant</label>
+    <select id="restaurantSelect">
+      <option value="tonys">Tony's Brick Oven Pizzeria</option>
+      <option value="hotbagels">Hot Bagels 2nd Street</option>
+    </select>
+  </div>
+
   <div id="conversation"></div>
 
   <div class="talk-area">
@@ -204,11 +243,12 @@
 </main>
 
 <script>
-  const btn      = document.getElementById('talkBtn');
-  const status   = document.getElementById('status');
-  const convo    = document.getElementById('conversation');
-  const cartEl   = document.getElementById('cart');
-  const newOrder = document.getElementById('newOrderBtn');
+  const btn            = document.getElementById('talkBtn');
+  const status         = document.getElementById('status');
+  const convo          = document.getElementById('conversation');
+  const cartEl         = document.getElementById('cart');
+  const newOrder       = document.getElementById('newOrderBtn');
+  const restaurantSel  = document.getElementById('restaurantSelect');
 
   let mediaRecorder = null;
   let audioChunks   = [];
@@ -268,7 +308,7 @@
       const res = await fetch('/voice/test/open', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ sessionId }),
+        body:    JSON.stringify({ sessionId, restaurantId: restaurantSel.value }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to connect');
@@ -281,13 +321,17 @@
     }
   }
 
-  newOrder.addEventListener('click', async () => {
+  async function startNewSession() {
     if (busy) return;
     sessionId = crypto.randomUUID();
     convo.innerHTML = '';
     updateCart(null);
     await initSession();
-  });
+  }
+
+  newOrder.addEventListener('click', startNewSession);
+
+  restaurantSel.addEventListener('change', startNewSession);
 
   // ── Recording ──────────────────────────────────────────────────────────────
 

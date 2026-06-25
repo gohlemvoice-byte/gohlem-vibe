@@ -10,6 +10,12 @@ const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
 const ConversationEngine = require('../conversation/conversationEngine');
 const restaurantConfig = require('../config/restaurantConfig');
+const hotBagelsConfig  = require('../config/hotBagelsConfig');
+
+const RESTAURANT_CONFIGS = {
+  tonys:     restaurantConfig,
+  hotbagels: hotBagelsConfig,
+};
 
 const PORT = process.env.PORT || 3000;
 const DG_KEY = process.env.DEEPGRAM_API_KEY;
@@ -112,7 +118,8 @@ app.post('/voice/test/open', express.json(), async (req, res) => {
   const sessionId = req.body?.sessionId;
   if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
 
-  const session = { engine: new ConversationEngine(restaurantConfig), lastActivity: Date.now() };
+  const config  = RESTAURANT_CONFIGS[req.body?.restaurantId] || restaurantConfig;
+  const session = { engine: new ConversationEngine(config), lastActivity: Date.now() };
   browserSessions.set(sessionId, session);
 
   try {
