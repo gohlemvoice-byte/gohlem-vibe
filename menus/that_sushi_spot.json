@@ -1,0 +1,1522 @@
+{
+  "restaurant": {
+    "name": "That Sushi Spot",
+    "address": "214 Clifton Ave, Lakewood, NJ 08701",
+    "phone": "+17328027220",
+    "cuisine": "Kosher Sushi / Japanese",
+    "pos": "Toast",
+    "toast_url": "https://order.toasttab.com/online/that-sushi-spot-lkwd-nj-214-clifton-ave",
+    "hours": {
+      "monday": "10:30 AM - 9:00 PM",
+      "tuesday": "10:30 AM - 9:00 PM",
+      "wednesday": "10:30 AM - 9:00 PM",
+      "thursday": "10:30 AM - 9:00 PM",
+      "friday": "10:30 AM - 2:30 PM",
+      "saturday": "7:30 PM - 11:30 PM",
+      "sunday": "10:30 AM - 9:00 PM"
+    }
+  },
+  "menu": {
+    "categories": [
+      {
+        "id": "new_items",
+        "name": "NEW ITEMS!!",
+        "items": [
+          {
+            "id": "black_truffle_roll",
+            "name": "Black Truffle Roll",
+            "description": "Tuna, portobello mushroom, jalapeño topped with seared salmon & black truffle",
+            "price": 15.00,
+            "modifiers": []
+          },
+          {
+            "id": "golden_zucchini_sticks",
+            "name": "Golden Zucchini Sticks",
+            "description": "Lightly battered and fried zucchini served with Caesar dressing",
+            "price": 8.00,
+            "modifiers": []
+          },
+          {
+            "id": "sushi_grade_cured_fish_combo",
+            "name": "Sushi Grade Cured Fish Combo",
+            "description": "Premium melt-in-your-mouth cuts expertly cured for unbeatable flavor and freshness",
+            "price": 18.00,
+            "modifiers": []
+          },
+          {
+            "id": "sushi_grade_cured_tuna",
+            "name": "Sushi Grade Cured Tuna",
+            "description": "Sushi grade cured tuna",
+            "price": 18.00,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "appetizers",
+        "name": "Appetizers",
+        "items": [
+          {
+            "id": "avocado_spring_roll_3pcs",
+            "name": "Avocado Spring Roll (3 pcs)",
+            "description": "Cucumber, carrots, lettuce, mango wrapped in soy paper with ginger dressing on the side",
+            "price": 10.00,
+            "modifiers": []
+          },
+          {
+            "id": "buffalo_cauliflower_poppers",
+            "name": "Buffalo Cauliflower Poppers",
+            "description": "Breaded cauliflower tossed in homemade buffalo sauce",
+            "price": 12.00,
+            "modifiers": [],
+            "tags": ["spicy"]
+          },
+          {
+            "id": "cajun_fries",
+            "name": "Cajun Fries",
+            "description": "Cajun seasoned fries",
+            "price": 7.00,
+            "modifiers": []
+          },
+          {
+            "id": "cookies",
+            "name": "Cookies",
+            "description": "Freshly baked chocolate chip cookies, 3 per order",
+            "price": 4.00,
+            "modifiers": []
+          },
+          {
+            "id": "crispy_rice",
+            "name": "Crispy Rice",
+            "description": "Golden lightly fried sushi rice squares topped with fresh fish and drizzled with savory sauce",
+            "price": 17.00,
+            "modifiers": []
+          },
+          {
+            "id": "edamame",
+            "name": "Edamame",
+            "description": "Boiled soy beans, lightly salted",
+            "price": 6.50,
+            "modifiers": []
+          },
+          {
+            "id": "fish_and_chips",
+            "name": "Fish and Chips (Salmon)",
+            "description": "8 pieces of breaded salmon on top of french fries with a side of lemon",
+            "price": 22.00,
+            "modifiers": []
+          },
+          {
+            "id": "jalapeno_tempura_poppers",
+            "name": "Jalapeño Tempura Poppers",
+            "description": "Jalapeño peppers stuffed with pareve cream cheese, spicy salmon, or spicy tuna - tempura fried. 3 sliced jalapeños (6 pcs)",
+            "price": 8.00,
+            "modifiers": [],
+            "tags": ["spicy"]
+          },
+          {
+            "id": "jumbo_dog",
+            "name": "Jumbo Dog",
+            "description": "Tempura onion roll (seaweed outside) stuffed with cooked salmon. Topped with guacamole, special sauce & crunch",
+            "price": 16.00,
+            "modifiers": []
+          },
+          {
+            "id": "kani_salad",
+            "name": "Kani Salad",
+            "description": "Diced cucumber topped with spicy kani, sweet sauce and crunch",
+            "price": 8.00,
+            "modifiers": []
+          },
+          {
+            "id": "kani_sticks",
+            "name": "Kani Sticks (Tempura)",
+            "description": "Imitation crab battered and deep fried",
+            "price": 10.00,
+            "modifiers": []
+          },
+          {
+            "id": "mini_veg_eggrolls",
+            "name": "Mini Veg Eggrolls (8 pcs)",
+            "description": "Mini vegetable egg rolls",
+            "price": 7.00,
+            "modifiers": []
+          },
+          {
+            "id": "mixed_fries",
+            "name": "Mixed Fries",
+            "description": "Mixed fries",
+            "price": 6.00,
+            "modifiers": []
+          },
+          {
+            "id": "poke_nachos",
+            "name": "Poke Nachos",
+            "description": "Homemade nacho chips with choice of tuna, salmon or cooked salmon, avocado & red onion. Garnished with spicy mayo, sweet sauce & toasted sesame seeds",
+            "price": 14.00,
+            "modifiers": [
+              {
+                "id": "poke_nachos_fish",
+                "name": "Fish Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "nachos_tuna", "name": "Tuna", "price_delta": 0.00 },
+                  { "id": "nachos_salmon", "name": "Salmon", "price_delta": 0.00 },
+                  { "id": "nachos_cooked_salmon", "name": "Cooked Salmon", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "roasted_cauliflower",
+            "name": "Roasted Cauliflower",
+            "description": "Roasted cauliflower",
+            "price": 12.00,
+            "modifiers": []
+          },
+          {
+            "id": "shishito_pepper",
+            "name": "Shishito Pepper",
+            "description": "Shishito peppers",
+            "price": 12.00,
+            "modifiers": []
+          },
+          {
+            "id": "sushi_burrito",
+            "name": "Sushi Burrito",
+            "description": "Choice of 2 fish and 2 vegetables",
+            "price": 14.50,
+            "modifiers": [
+              {
+                "id": "sushi_burrito_fish",
+                "name": "Fish Choice",
+                "required": true,
+                "min_select": 2,
+                "max_select": 2,
+                "options": [
+                  { "id": "burrito_salmon", "name": "Salmon", "price_delta": 0.00 },
+                  { "id": "burrito_tuna", "name": "Tuna", "price_delta": 0.00 },
+                  { "id": "burrito_spicy_salmon", "name": "Spicy Salmon", "price_delta": 0.00 },
+                  { "id": "burrito_spicy_tuna", "name": "Spicy Tuna", "price_delta": 0.00 },
+                  { "id": "burrito_kani", "name": "Kani", "price_delta": 0.00 },
+                  { "id": "burrito_cooked_salmon", "name": "Cooked Salmon", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "sushi_burrito_veg",
+                "name": "Vegetable Choice",
+                "required": true,
+                "min_select": 2,
+                "max_select": 2,
+                "options": [
+                  { "id": "burrito_avocado", "name": "Avocado", "price_delta": 0.00 },
+                  { "id": "burrito_cucumber", "name": "Cucumber", "price_delta": 0.00 },
+                  { "id": "burrito_carrot", "name": "Carrot", "price_delta": 0.00 },
+                  { "id": "burrito_sweet_potato", "name": "Sweet Potato", "price_delta": 0.00 },
+                  { "id": "burrito_mushroom", "name": "Portobello Mushroom", "price_delta": 0.00 },
+                  { "id": "burrito_mango", "name": "Mango", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "sushi_spot_fries",
+            "name": "Sushi Spot Fries",
+            "description": "Shoestring fries, lightly salted",
+            "price": 7.00,
+            "modifiers": []
+          },
+          {
+            "id": "sweet_potato_fries",
+            "name": "Sweet Potato Fries",
+            "description": "Tempura battered sweet potato fries",
+            "price": 7.00,
+            "modifiers": []
+          },
+          {
+            "id": "tempura_onion_rings",
+            "name": "Tempura Onion Rings",
+            "description": "Tempura battered onion rings",
+            "price": 7.00,
+            "modifiers": []
+          },
+          {
+            "id": "tuna_spring_roll",
+            "name": "Tuna Spring Roll",
+            "description": "Canned tuna wrapped in rice paper with lettuce, carrots, and tuna. Served with cilantro lime sauce",
+            "price": 10.00,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "sushi_rolls",
+        "name": "Sushi Rolls",
+        "description": "All rolls available with white or brown rice",
+        "items": [
+          {
+            "id": "alaskan_roll",
+            "name": "Alaskan Roll",
+            "description": "Salmon, avocado & cucumber (raw)",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "black_pepper_salmon_roll",
+            "name": "Black Pepper Salmon Roll",
+            "description": "Black pepper salmon (raw)",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "black_pepper_tuna_roll",
+            "name": "Black Pepper Tuna Roll",
+            "description": "Black pepper tuna (raw)",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "bluefin_tuna_roll",
+            "name": "Bluefin Tuna Roll",
+            "description": "Bluefin tuna roll",
+            "price": 10.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "holiday_roll",
+            "name": "Holiday Roll",
+            "description": "Holiday roll",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "philadelphia_roll",
+            "name": "Philadelphia Roll",
+            "description": "Salmon, cucumber & pareve cream cheese (raw)",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "salango_roll",
+            "name": "Salango Roll",
+            "description": "Salango roll",
+            "price": 8.00,
+            "tags": ["spicy"],
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "salmon_roll",
+            "name": "Salmon Roll",
+            "description": "Raw salmon roll",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "salmon_combo",
+            "name": "Salmon Combo",
+            "description": "1 salmon avocado roll, 3 pcs salmon nigiri",
+            "price": 15.00,
+            "modifiers": []
+          },
+          {
+            "id": "salmon_kishka_roll",
+            "name": "Salmon Kishka Roll",
+            "description": "Salmon kishka (raw)",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "salmon_skin_roll",
+            "name": "Salmon Skin Roll",
+            "description": "Salmon skin roll",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "spicy_bluefin_tuna_roll",
+            "name": "Spicy Bluefin Tuna Roll",
+            "description": "Bluefin tuna with jalapeño and cucumber",
+            "price": 10.00,
+            "tags": ["spicy"],
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "spicy_salmon_roll",
+            "name": "Spicy Salmon Roll",
+            "description": "Spicy salmon (raw)",
+            "price": 8.00,
+            "tags": ["spicy"],
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "spicy_tuna_roll",
+            "name": "Spicy Tuna Roll",
+            "description": "Spicy tuna (raw)",
+            "price": 8.00,
+            "tags": ["spicy"],
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "spicy_yellow_tail_roll",
+            "name": "Spicy Yellow Tail Roll",
+            "description": "Yellowtail with jalapeño & cucumber",
+            "price": 8.00,
+            "tags": ["spicy"],
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "spring_roll_sushi",
+            "name": "Spring Roll",
+            "description": "Salmon, tuna, and avocado",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "tuna_roll",
+            "name": "Tuna Roll",
+            "description": "Raw tuna roll",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "tuna_combo",
+            "name": "Tuna Combo",
+            "description": "1 tuna avocado roll, 3 pcs tuna nigiri",
+            "price": 15.00,
+            "modifiers": []
+          },
+          {
+            "id": "tzviki_roll",
+            "name": "Tzviki Roll",
+            "description": "Black pepper tuna, avocado and lemon",
+            "price": 8.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "yellow_tail_roll",
+            "name": "Yellow Tail Roll",
+            "description": "Yellowtail roll",
+            "price": 9.00,
+            "modifiers": [
+              {
+                "id": "roll_rice",
+                "name": "Rice Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "brown_rice", "name": "Brown Rice", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "vegetable_rolls",
+        "name": "Vegetable Rolls",
+        "items": [
+          { "id": "avocado_crunch_roll", "name": "Avocado Crunch Roll", "price": 7.00, "modifiers": [] },
+          { "id": "avocado_cucumber_roll", "name": "Avocado Cucumber Roll", "price": 7.00, "modifiers": [] },
+          { "id": "avocado_lemon_roll", "name": "Avocado Lemon Roll", "price": 7.00, "modifiers": [] },
+          { "id": "avocado_roll", "name": "Avocado Roll", "price": 7.00, "modifiers": [] },
+          { "id": "carrot_roll", "name": "Carrot Roll", "price": 6.00, "modifiers": [] },
+          { "id": "cucumber_carrot_roll", "name": "Cucumber Carrot Roll", "price": 6.50, "modifiers": [] },
+          { "id": "cucumber_roll", "name": "Cucumber Roll", "price": 6.50, "modifiers": [] },
+          { "id": "garden_roll", "name": "Garden Roll", "price": 7.00, "modifiers": [] },
+          {
+            "id": "junior_lba_roll",
+            "name": "Junior LBA Roll",
+            "description": "Sweet potato and crunchy onion tempura, topped with sweet sauce and crunch",
+            "price": 10.50,
+            "modifiers": []
+          },
+          { "id": "kids_roll", "name": "Kids Roll", "description": "Rice inside, rice outside", "price": 6.50, "modifiers": [] },
+          { "id": "kishka_roll", "name": "Kishka Roll", "price": 7.00, "modifiers": [] },
+          { "id": "lemon_roll", "name": "Lemon Roll", "price": 6.00, "modifiers": [] },
+          {
+            "id": "magnificent_roll",
+            "name": "Magnificent Roll",
+            "description": "Sweet potato topped with avocado & crunch",
+            "price": 10.50,
+            "modifiers": []
+          },
+          { "id": "mango_roll", "name": "Mango Roll", "price": 7.00, "modifiers": [] },
+          { "id": "mushroom_onion_roll", "name": "Mushroom Onion Roll", "price": 7.00, "modifiers": [] },
+          { "id": "onion_tempura_roll", "name": "Onion Tempura Roll", "price": 7.00, "modifiers": [] },
+          { "id": "portobello_mushroom_roll", "name": "Portobello Mushroom Roll", "price": 7.00, "modifiers": [] },
+          { "id": "portobello_pesto_roll", "name": "Portobello Pesto Roll", "price": 7.00, "modifiers": [] },
+          {
+            "id": "portobello_plus_roll",
+            "name": "Portobello Plus Roll",
+            "description": "Sweet potato, portobello mushroom topped with avocado",
+            "price": 10.50,
+            "modifiers": []
+          },
+          { "id": "sundried_tomato_avocado_roll", "name": "Sundried Tomato Avocado Roll", "price": 7.00, "modifiers": [] },
+          { "id": "sweet_potato_avocado_roll", "name": "Sweet Potato Avocado Roll", "price": 7.00, "modifiers": [] },
+          { "id": "sweet_potato_tempura_roll", "name": "Sweet Potato Tempura Roll", "price": 7.00, "modifiers": [] },
+          { "id": "sweetheart_roll", "name": "Sweetheart Roll", "price": 7.00, "modifiers": [] },
+          { "id": "veg_tempura_roll", "name": "Veg. Tempura Roll", "price": 10.50, "modifiers": [] },
+          { "id": "vegetable_roll", "name": "Vegetable Roll", "price": 6.50, "modifiers": [] },
+          { "id": "vegetarian_mexican_roll", "name": "Vegetarian Mexican Roll", "price": 7.00, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "cooked_rolls",
+        "name": "Cooked Rolls",
+        "items": [
+          {
+            "id": "california_roll",
+            "name": "California Roll",
+            "description": "Kani, cucumber & avocado",
+            "price": 7.50,
+            "modifiers": []
+          },
+          {
+            "id": "cooked_salmon_kishke_roll",
+            "name": "Cooked Salmon Kishke Roll",
+            "price": 8.50,
+            "modifiers": []
+          },
+          {
+            "id": "cooked_salmon_roll",
+            "name": "Cooked Salmon Roll",
+            "price": 9.00,
+            "modifiers": []
+          },
+          {
+            "id": "cooked_tuna",
+            "name": "Cooked Tuna Roll",
+            "price": 8.50,
+            "modifiers": []
+          },
+          {
+            "id": "fit_roll",
+            "name": "Fit Roll (No Rice)",
+            "description": "Cooked salmon, avocado, carrot & lettuce wrapped in cucumber",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "green_house_roll",
+            "name": "Green House Roll",
+            "description": "Cooked salmon, carrot, cucumber topped with avocado",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "island_roll",
+            "name": "Island Roll",
+            "description": "Cooked tuna, kani, carrots, topped with avocado",
+            "price": 14.50,
+            "modifiers": []
+          },
+          {
+            "id": "kani_roll",
+            "name": "Kani Roll",
+            "price": 7.00,
+            "modifiers": []
+          },
+          {
+            "id": "king_crab_roll",
+            "name": "King Crab Roll",
+            "price": 8.00,
+            "modifiers": []
+          },
+          {
+            "id": "legit_roll",
+            "name": "Legit Roll",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "let_the_good_times_roll",
+            "name": "Let the Good Times Roll (XL)",
+            "description": "Cooked salmon, kani, sweet potato & avocado",
+            "price": 14.00,
+            "modifiers": []
+          },
+          {
+            "id": "pesto_magic_roll",
+            "name": "Pesto Magic Roll",
+            "description": "Cooked salmon, portobello mushroom & pesto",
+            "price": 9.00,
+            "modifiers": []
+          },
+          {
+            "id": "russian_roll",
+            "name": "Russian Roll",
+            "description": "Cooked tuna, red onion, mushrooms, topped with avocado",
+            "price": 14.00,
+            "modifiers": []
+          },
+          {
+            "id": "salmon_popper_roll",
+            "name": "Salmon Popper Roll",
+            "description": "Tempura salmon with choice of any 2 vegetables topped with crunch",
+            "price": 9.50,
+            "modifiers": [
+              {
+                "id": "popper_veg",
+                "name": "Choose 2 Vegetables",
+                "required": true,
+                "min_select": 2,
+                "max_select": 2,
+                "options": [
+                  { "id": "pv_avocado", "name": "Avocado", "price_delta": 0.00 },
+                  { "id": "pv_cucumber", "name": "Cucumber", "price_delta": 0.00 },
+                  { "id": "pv_carrot", "name": "Carrot", "price_delta": 0.00 },
+                  { "id": "pv_sweet_potato", "name": "Sweet Potato", "price_delta": 0.00 },
+                  { "id": "pv_mushroom", "name": "Portobello Mushroom", "price_delta": 0.00 },
+                  { "id": "pv_mango", "name": "Mango", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "schnitzel_roll",
+            "name": "Schnitzel Roll",
+            "description": "Tempura fried spicy salmon, topped with spicy mayo & crunch",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "shredded_kani",
+            "name": "Shredded Kani Roll",
+            "price": 7.00,
+            "modifiers": []
+          },
+          {
+            "id": "spicy_kani_roll",
+            "name": "Spicy Kani Roll",
+            "description": "Spicy kani crunch, choice of avocado OR cucumber",
+            "price": 7.50,
+            "modifiers": [
+              {
+                "id": "spicy_kani_choice",
+                "name": "Avocado or Cucumber",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "sk_avocado", "name": "Avocado", "price_delta": 0.00 },
+                  { "id": "sk_cucumber", "name": "Cucumber", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "tropical_heat_roll",
+            "name": "Tropical Heat Roll",
+            "description": "Cooked salmon, mango, jalapeño, topped with avocado",
+            "price": 14.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "special_rolls",
+        "name": "Special Rolls",
+        "items": [
+          {
+            "id": "black_diamond",
+            "name": "Black Diamond",
+            "description": "Black pepper tuna avocado, topped with seared salmon & spicy mayo",
+            "price": 14.00,
+            "modifiers": []
+          },
+          {
+            "id": "black_truffle_roll_special",
+            "name": "Black Truffle Roll",
+            "description": "Tuna, portobello mushroom, jalapeño topped with seared salmon & black truffle",
+            "price": 15.00,
+            "modifiers": []
+          },
+          {
+            "id": "bluefin_tuna_lovers",
+            "name": "Bluefin Tuna Lovers",
+            "description": "Spicy bluefin tuna, topped with bluefin tuna & jalapeño",
+            "price": 17.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "crab_lovers_roll",
+            "name": "Crab Lover's Roll",
+            "description": "Spicy kani, avocado topped with spicy kani and crunch",
+            "price": 12.00,
+            "modifiers": []
+          },
+          {
+            "id": "crunchy_situation_roll",
+            "name": "Crunchy Situation (XL) Roll",
+            "description": "Spicy salmon, spicy kani, avocado topped with spicy tuna, sauce & crunch",
+            "price": 16.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "dragon_roll",
+            "name": "Dragon Roll",
+            "description": "California topped with avocado",
+            "price": 12.00,
+            "modifiers": []
+          },
+          {
+            "id": "el_scoobacho_roll",
+            "name": "El Scoobacho (XL) Roll",
+            "description": "Salmon, tuna, cucumber & avocado topped with crunch and sauce",
+            "price": 15.00,
+            "modifiers": []
+          },
+          {
+            "id": "fashionista_roll",
+            "name": "Fashionista Roll",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "godzilla_roll",
+            "name": "Godzilla Roll",
+            "description": "Spicy tuna crunch, topped with avocado",
+            "price": 12.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "golden_wave_roll",
+            "name": "Golden Wave Roll",
+            "description": "Tempura salmon, avocado, cucumber. Topped with yellowtail, crunch & wasabi mayo",
+            "price": 16.50,
+            "modifiers": []
+          },
+          {
+            "id": "greeny_roll",
+            "name": "Greeny Roll",
+            "description": "Spicy salmon and spicy kani topped with avocado",
+            "price": 13.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "interesting_roll",
+            "name": "Interesting Roll",
+            "price": 15.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "jack_attack",
+            "name": "Jack Attack",
+            "description": "Black pepper tuna, avocado, tempura sweet potato, topped with avocado & tuna, crunch inside, spicy mayo",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "jojo_roll",
+            "name": "Jojo Roll (XL)",
+            "description": "Black pepper salmon, black pepper tuna, avocado, cucumber, jalapeño, carrots. Topped with avocado, crunch & wasabi mayo",
+            "price": 17.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "kawasaki_roll",
+            "name": "Kawasaki Roll",
+            "description": "Spicy kani topped with avocado, sweet sauce and crunch",
+            "price": 12.00,
+            "modifiers": []
+          },
+          {
+            "id": "lba_roll",
+            "name": "LBA Roll",
+            "description": "Spicy tuna, cucumber, jalapeño topped with tuna and avocado with spicy mayo",
+            "price": 14.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "mexican_roll",
+            "name": "Mexican Roll",
+            "description": "White tuna, jalapeño topped with avocado, crunch and spicy mayo",
+            "price": 13.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "naruto_roll",
+            "name": "Naruto Roll (No Rice)",
+            "description": "Salmon, tuna, kani & avocado, wrapped in cucumber",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "ocean_jewel",
+            "name": "Ocean Jewel",
+            "description": "Bluefin tuna, cucumber, jalapeño. Topped with bluefin tuna, avocado & sriracha",
+            "price": 17.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "rainbow_roll",
+            "name": "Rainbow Roll",
+            "description": "California topped with assorted fish & avocado",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "salmon_lovers_roll",
+            "name": "Salmon Lovers Roll",
+            "description": "Spicy salmon & avocado topped with salmon",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "seared_sunset_roll",
+            "name": "Seared Sunset Roll",
+            "description": "Spicy kani, avocado. Topped with cooked seared salmon seared with special sauce",
+            "price": 14.00,
+            "modifiers": []
+          },
+          {
+            "id": "spicy_status_roll",
+            "name": "Spicy Status Roll",
+            "description": "Spicy salmon, spicy kani & jalapeño, topped with spicy tuna & crunch",
+            "price": 14.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "sunburst_roll",
+            "name": "Sunburst Roll",
+            "description": "Salmon, sundried tomato and pesto, topped with avocado",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "szmidty_roll",
+            "name": "Szmidty Roll (Kishka)",
+            "price": 14.00,
+            "modifiers": []
+          },
+          {
+            "id": "tls_roll",
+            "name": "TLS Roll",
+            "description": "Spicy tuna, jalapeño topped black pepper tuna, sweet and spicy sauce and crunch",
+            "price": 14.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "tuna_lovers_roll",
+            "name": "Tuna Lovers Roll",
+            "description": "Spicy tuna & avocado topped with tuna",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "volcanic_eruption_roll",
+            "name": "Volcanic Eruption Roll",
+            "description": "Spicy tuna & cucumber, topped with seared tuna, sriracha & crunch",
+            "price": 14.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "yellowtail_lovers_roll",
+            "name": "Yellowtail Lover's Roll",
+            "description": "Yellowtail, jalapeño, cucumber. Topped with seared yellowtail seared with special sauce",
+            "price": 15.00,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "tempura_special_rolls",
+        "name": "Tempura Special Rolls",
+        "items": [
+          {
+            "id": "sharon_roll",
+            "name": "Sharon Roll",
+            "description": "Salmon & avocado topped with crunch & sauce",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "spider_roll",
+            "name": "Spider Roll",
+            "description": "Salmon, kani & carrot topped with sweet sauce & crunch",
+            "price": 13.00,
+            "modifiers": []
+          },
+          {
+            "id": "toasted_bagel_roll",
+            "name": "Toasted Bagel Roll",
+            "description": "Salmon, pareve cream cheese, cucumber, topped with spicy mayo & crunch",
+            "price": 14.00,
+            "modifiers": []
+          },
+          {
+            "id": "spicefest_roll",
+            "name": "Spicefest Roll",
+            "description": "Spicy kani, spicy salmon, spicy tuna & avocado topped with jalapeño, sriracha, spicy mayo & crunch",
+            "price": 15.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "firecracker_roll",
+            "name": "Firecracker Roll",
+            "description": "Black pepper tuna, avocado & jalapeño, topped with crunch and sriracha",
+            "price": 14.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "bentzy_roll",
+            "name": "Bentzy Roll (Buffalo Sauce)",
+            "description": "Cooked salmon & avocado tossed in buffalo sauce",
+            "price": 15.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "manhattan_roll",
+            "name": "Manhattan Roll",
+            "description": "Spicy tuna, spicy salmon, avocado & cucumber, topped with sauce",
+            "price": 14.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "sushi_spot_roll",
+            "name": "Sushi Spot Roll",
+            "description": "Black pepper tuna, avocado, sundried tomato & pesto topped with sauce and crunch",
+            "price": 15.00,
+            "modifiers": []
+          },
+          {
+            "id": "crispy_volcano_roll",
+            "name": "Crispy Volcano Roll",
+            "description": "Cooked tuna, avocado, jalapeño. Topped with wasabi mayo & crunch",
+            "price": 14.00,
+            "tags": ["spicy"],
+            "modifiers": []
+          },
+          {
+            "id": "tempura_dragon_roll",
+            "name": "Tempura Dragon Roll",
+            "description": "California topped with avocado (tempura)",
+            "price": 14.00,
+            "modifiers": []
+          },
+          {
+            "id": "omg_roll",
+            "name": "OMG! (Oh My Guacamole) Roll",
+            "description": "Salmon & sweet potato topped with guacamole, crunch & sauce",
+            "price": 16.00,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "poke_bowls",
+        "name": "Poke Bowls",
+        "items": [
+          {
+            "id": "small_poke_bowl",
+            "name": "Small Poke Bowl (24 oz)",
+            "price": 15.00,
+            "modifiers": [
+              {
+                "id": "poke_base",
+                "name": "Base Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "pb_white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "pb_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "pb_quinoa", "name": "Quinoa", "price_delta": 0.00 },
+                  { "id": "pb_romaine", "name": "Romaine Lettuce", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "poke_fish",
+                "name": "Fish Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "pf_cooked_salmon", "name": "Cooked Salmon", "price_delta": 1.00 },
+                  { "id": "pf_grilled_tuna", "name": "Grilled Tuna", "price_delta": 0.00 },
+                  { "id": "pf_kani", "name": "Kani", "price_delta": 0.00 },
+                  { "id": "pf_no_fish", "name": "No Fish", "price_delta": 0.00 },
+                  { "id": "pf_raw_bp_salmon", "name": "Raw Black Pepper Salmon", "price_delta": 0.00 },
+                  { "id": "pf_raw_bp_tuna", "name": "Raw Black Pepper Tuna", "price_delta": 0.00 },
+                  { "id": "pf_raw_salmon", "name": "Raw Salmon", "price_delta": 0.00 },
+                  { "id": "pf_raw_spicy_salmon", "name": "Raw Spicy Salmon", "price_delta": 0.00 },
+                  { "id": "pf_raw_spicy_tuna", "name": "Raw Spicy Tuna", "price_delta": 0.00 },
+                  { "id": "pf_raw_tuna", "name": "Raw Tuna", "price_delta": 0.00 },
+                  { "id": "pf_raw_yellow_tail", "name": "Raw Yellow Tail", "price_delta": 0.00 },
+                  { "id": "pf_spicy_kani", "name": "Spicy Kani", "price_delta": 0.00 },
+                  { "id": "pf_tempura_salmon", "name": "Tempura Salmon", "price_delta": 2.00 },
+                  { "id": "pf_seared_tuna", "name": "Seared Tuna", "price_delta": 2.50 },
+                  { "id": "pf_shredded_kani", "name": "Shredded Kani", "price_delta": 0.00 },
+                  { "id": "pf_bluefin_tuna", "name": "Bluefin Tuna", "price_delta": 5.00 }
+                ]
+              },
+              {
+                "id": "poke_veg",
+                "name": "Vegetable Choice (up to 4)",
+                "required": true,
+                "min_select": 1,
+                "max_select": 4,
+                "options": [
+                  { "id": "pv_avocado", "name": "Avocado", "price_delta": 0.00 },
+                  { "id": "pv_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "pv_beets", "name": "Beets", "price_delta": 0.00 },
+                  { "id": "pv_carrot", "name": "Carrot", "price_delta": 0.00 },
+                  { "id": "pv_cherry_tomato", "name": "Cherry Tomato", "price_delta": 0.00 },
+                  { "id": "pv_crunchy_onion", "name": "Crunchy Onion", "price_delta": 0.00 },
+                  { "id": "pv_cucumber", "name": "Cucumber", "price_delta": 0.00 },
+                  { "id": "pv_edamame", "name": "Edamame", "price_delta": 0.00 },
+                  { "id": "pv_jalapeno", "name": "Jalapeño", "price_delta": 0.00 },
+                  { "id": "pv_mango", "name": "Mango", "price_delta": 0.00 },
+                  { "id": "pv_portobello", "name": "Portobello Mushroom", "price_delta": 0.00 },
+                  { "id": "pv_purple_onion", "name": "Purple Onion", "price_delta": 0.00 },
+                  { "id": "pv_roasted_cauliflower", "name": "Roasted Cauliflower", "price_delta": 0.00 },
+                  { "id": "pv_sundried_tomato", "name": "Sundried Tomato", "price_delta": 0.00 },
+                  { "id": "pv_tempura_sweet_potato", "name": "Tempura Sweet Potato", "price_delta": 0.00 },
+                  { "id": "pv_no_veg", "name": "No Vegetables", "price_delta": 0.00 },
+                  { "id": "pv_lemon", "name": "Lemon", "price_delta": 1.00 }
+                ]
+              },
+              {
+                "id": "poke_topping",
+                "name": "Topping Choice (up to 3)",
+                "required": true,
+                "min_select": 1,
+                "max_select": 3,
+                "options": [
+                  { "id": "pt_crunch", "name": "Crunch", "price_delta": 0.00 },
+                  { "id": "pt_sesame", "name": "Toasted Sesame Seeds", "price_delta": 0.00 },
+                  { "id": "pt_pesto", "name": "Pesto", "price_delta": 0.00 },
+                  { "id": "pt_no_topping", "name": "No Topping", "price_delta": 0.00 },
+                  { "id": "pt_nori", "name": "Nori", "price_delta": 1.00 }
+                ]
+              },
+              {
+                "id": "poke_sauce",
+                "name": "Sauce Choice (up to 2)",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "ps_soy", "name": "Soy Sauce", "price_delta": 0.00 },
+                  { "id": "ps_spicy_mayo", "name": "Spicy Mayo", "price_delta": 0.00 },
+                  { "id": "ps_ginger", "name": "Ginger Dressing", "price_delta": 0.00 },
+                  { "id": "ps_sweet_sauce", "name": "Sweet Sauce", "price_delta": 0.00 },
+                  { "id": "ps_balsamic", "name": "Balsamic", "price_delta": 0.00 },
+                  { "id": "ps_caesar", "name": "Caesar", "price_delta": 0.00 },
+                  { "id": "ps_wasabi_mayo", "name": "Wasabi Mayo", "price_delta": 0.00 },
+                  { "id": "ps_no_sauce", "name": "No Sauce", "price_delta": 0.00 },
+                  { "id": "ps_sriracha", "name": "Sriracha Sauce", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "poke_sauce_delivery",
+                "name": "Sauce Options",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "psd_mix_in", "name": "Mix In Bowl", "price_delta": 0.00 },
+                  { "id": "psd_on_side", "name": "Sauce On The Side", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "large_poke_bowl",
+            "name": "Large Poke Bowl (32 oz)",
+            "price": 18.00,
+            "modifiers": [
+              {
+                "id": "poke_base",
+                "name": "Base Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "pb_white_rice", "name": "White Rice", "price_delta": 0.00 },
+                  { "id": "pb_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "pb_quinoa", "name": "Quinoa", "price_delta": 0.00 },
+                  { "id": "pb_romaine", "name": "Romaine Lettuce", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "poke_fish",
+                "name": "Fish Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "pf_cooked_salmon", "name": "Cooked Salmon", "price_delta": 1.00 },
+                  { "id": "pf_grilled_tuna", "name": "Grilled Tuna", "price_delta": 0.00 },
+                  { "id": "pf_kani", "name": "Kani", "price_delta": 0.00 },
+                  { "id": "pf_no_fish", "name": "No Fish", "price_delta": 0.00 },
+                  { "id": "pf_raw_bp_salmon", "name": "Raw Black Pepper Salmon", "price_delta": 0.00 },
+                  { "id": "pf_raw_bp_tuna", "name": "Raw Black Pepper Tuna", "price_delta": 0.00 },
+                  { "id": "pf_raw_salmon", "name": "Raw Salmon", "price_delta": 0.00 },
+                  { "id": "pf_raw_spicy_salmon", "name": "Raw Spicy Salmon", "price_delta": 0.00 },
+                  { "id": "pf_raw_spicy_tuna", "name": "Raw Spicy Tuna", "price_delta": 0.00 },
+                  { "id": "pf_raw_tuna", "name": "Raw Tuna", "price_delta": 0.00 },
+                  { "id": "pf_raw_yellow_tail", "name": "Raw Yellow Tail", "price_delta": 0.00 },
+                  { "id": "pf_spicy_kani", "name": "Spicy Kani", "price_delta": 0.00 },
+                  { "id": "pf_tempura_salmon", "name": "Tempura Salmon", "price_delta": 2.00 },
+                  { "id": "pf_seared_tuna", "name": "Seared Tuna", "price_delta": 2.50 },
+                  { "id": "pf_shredded_kani", "name": "Shredded Kani", "price_delta": 0.00 },
+                  { "id": "pf_bluefin_tuna", "name": "Bluefin Tuna", "price_delta": 5.00 }
+                ]
+              },
+              {
+                "id": "poke_veg",
+                "name": "Vegetable Choice (up to 4)",
+                "required": true,
+                "min_select": 1,
+                "max_select": 4,
+                "options": [
+                  { "id": "pv_avocado", "name": "Avocado", "price_delta": 0.00 },
+                  { "id": "pv_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "pv_beets", "name": "Beets", "price_delta": 0.00 },
+                  { "id": "pv_carrot", "name": "Carrot", "price_delta": 0.00 },
+                  { "id": "pv_cherry_tomato", "name": "Cherry Tomato", "price_delta": 0.00 },
+                  { "id": "pv_crunchy_onion", "name": "Crunchy Onion", "price_delta": 0.00 },
+                  { "id": "pv_cucumber", "name": "Cucumber", "price_delta": 0.00 },
+                  { "id": "pv_edamame", "name": "Edamame", "price_delta": 0.00 },
+                  { "id": "pv_jalapeno", "name": "Jalapeño", "price_delta": 0.00 },
+                  { "id": "pv_mango", "name": "Mango", "price_delta": 0.00 },
+                  { "id": "pv_portobello", "name": "Portobello Mushroom", "price_delta": 0.00 },
+                  { "id": "pv_purple_onion", "name": "Purple Onion", "price_delta": 0.00 },
+                  { "id": "pv_roasted_cauliflower", "name": "Roasted Cauliflower", "price_delta": 0.00 },
+                  { "id": "pv_sundried_tomato", "name": "Sundried Tomato", "price_delta": 0.00 },
+                  { "id": "pv_tempura_sweet_potato", "name": "Tempura Sweet Potato", "price_delta": 0.00 },
+                  { "id": "pv_no_veg", "name": "No Vegetables", "price_delta": 0.00 },
+                  { "id": "pv_lemon", "name": "Lemon", "price_delta": 1.00 }
+                ]
+              },
+              {
+                "id": "poke_topping",
+                "name": "Topping Choice (up to 3)",
+                "required": true,
+                "min_select": 1,
+                "max_select": 3,
+                "options": [
+                  { "id": "pt_crunch", "name": "Crunch", "price_delta": 0.00 },
+                  { "id": "pt_sesame", "name": "Toasted Sesame Seeds", "price_delta": 0.00 },
+                  { "id": "pt_pesto", "name": "Pesto", "price_delta": 0.00 },
+                  { "id": "pt_no_topping", "name": "No Topping", "price_delta": 0.00 },
+                  { "id": "pt_nori", "name": "Nori", "price_delta": 1.00 }
+                ]
+              },
+              {
+                "id": "poke_sauce",
+                "name": "Sauce Choice (up to 2)",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "ps_soy", "name": "Soy Sauce", "price_delta": 0.00 },
+                  { "id": "ps_spicy_mayo", "name": "Spicy Mayo", "price_delta": 0.00 },
+                  { "id": "ps_ginger", "name": "Ginger Dressing", "price_delta": 0.00 },
+                  { "id": "ps_sweet_sauce", "name": "Sweet Sauce", "price_delta": 0.00 },
+                  { "id": "ps_balsamic", "name": "Balsamic", "price_delta": 0.00 },
+                  { "id": "ps_caesar", "name": "Caesar", "price_delta": 0.00 },
+                  { "id": "ps_wasabi_mayo", "name": "Wasabi Mayo", "price_delta": 0.00 },
+                  { "id": "ps_no_sauce", "name": "No Sauce", "price_delta": 0.00 },
+                  { "id": "ps_sriracha", "name": "Sriracha Sauce", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "salmon_plates",
+        "name": "Premium Belly Cut Salmon Plate",
+        "items": [
+          {
+            "id": "seasoned_salmon_plate",
+            "name": "Seasoned Salmon Plate",
+            "price": 22.00,
+            "modifiers": []
+          },
+          {
+            "id": "teriyaki_salmon_plate",
+            "name": "Teriyaki Salmon Plate",
+            "description": "Perfectly cooked belly salmon with a choice of 2 sides",
+            "price": 22.00,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "sashimi",
+        "name": "Sashimi (2 pc. raw fish over cucumber)",
+        "items": [
+          { "id": "sashimi_bp_salmon", "name": "Black Pepper Salmon Sashimi", "price": 4.00, "modifiers": [] },
+          { "id": "sashimi_bp_tuna", "name": "Black Pepper Tuna Sashimi", "price": 4.00, "modifiers": [] },
+          { "id": "sashimi_bluefin_tuna", "name": "Bluefin Tuna Sashimi", "price": 5.50, "modifiers": [] },
+          { "id": "sashimi_salmon", "name": "Salmon Sashimi", "price": 4.00, "modifiers": [] },
+          { "id": "sashimi_seared_salmon", "name": "Seared Salmon Sashimi", "price": 4.00, "modifiers": [] },
+          { "id": "sashimi_seared_tuna", "name": "Seared Tuna Sashimi", "price": 4.00, "modifiers": [] },
+          { "id": "sashimi_tuna", "name": "Tuna Sashimi", "price": 4.00, "modifiers": [] },
+          { "id": "sashimi_yellow_tail", "name": "Yellow Tail Sashimi", "price": 4.00, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "nigiri",
+        "name": "Nigiri (1 pc. raw fish over rice)",
+        "items": [
+          { "id": "nigiri_bp_tuna", "name": "Black Pepper Tuna Nigiri", "price": 3.00, "modifiers": [] },
+          { "id": "nigiri_bluefin_tuna", "name": "Bluefin Tuna Nigiri", "price": 4.00, "modifiers": [] },
+          { "id": "nigiri_bp_salmon", "name": "Black Pepper Salmon Nigiri", "price": 3.00, "modifiers": [] },
+          { "id": "nigiri_salmon", "name": "Salmon Nigiri", "price": 3.00, "modifiers": [] },
+          { "id": "nigiri_seared_salmon", "name": "Seared Salmon Nigiri", "price": 3.00, "modifiers": [] },
+          { "id": "nigiri_tuna", "name": "Tuna Nigiri", "price": 3.00, "modifiers": [] },
+          { "id": "nigiri_yellow_tail", "name": "Yellow Tail Nigiri", "price": 3.00, "modifiers": [] },
+          { "id": "nigiri_seared_tuna", "name": "Seared Tuna Nigiri", "price": 3.00, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "soups",
+        "name": "Soup of the Day",
+        "items": [
+          { "id": "soup_ginger_carrot", "name": "Ginger Carrot Soup", "price": 6.00, "available": false, "modifiers": [] },
+          { "id": "soup_onion", "name": "Onion Soup", "price": 6.00, "available": false, "modifiers": [] },
+          { "id": "soup_sweet_potato", "name": "Sweet Potato Soup", "price": 6.00, "available": false, "modifiers": [] },
+          { "id": "soup_vegetable", "name": "Vegetable Soup", "price": 6.00, "available": true, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "party_platters",
+        "name": "Party Platters",
+        "description": "All platters come assorted chef's choice. Loose instructions can be written in comments.",
+        "items": [
+          { "id": "platter_small", "name": "Small Platter (48 pc.) - feeds 4-6", "description": "6 rolls including 1 tempura and 1 specialty", "price": 45.00, "modifiers": [] },
+          { "id": "platter_medium", "name": "Medium Platter (80 pc.) - feeds 8-10", "description": "Includes 1 tempura and 2 specialty", "price": 72.00, "modifiers": [] },
+          { "id": "platter_large", "name": "Large Platter (112 pc.) - feeds 10-14", "price": 100.00, "modifiers": [] },
+          { "id": "platter_xl", "name": "XL VIP Platter (136 pc.) - feeds 14-18", "price": 120.00, "modifiers": [] },
+          { "id": "platter_small_veg", "name": "Small Vegetable Platter (48 pc.)", "description": "No fish, only veg", "price": 40.00, "modifiers": [] },
+          { "id": "platter_medium_veg", "name": "Medium Vegetable Platter (80 pc.)", "description": "No fish, only veg", "price": 65.00, "modifiers": [] },
+          { "id": "platter_large_veg", "name": "Large Vegetable Platter (112 pc.)", "description": "No fish, only veg", "price": 92.00, "modifiers": [] },
+          { "id": "platter_xl_veg", "name": "XL VIP Platter All VEG (136 pc.) - feeds 14-18", "description": "No fish, only veg", "price": 105.00, "modifiers": [] },
+          { "id": "platter_small_fish", "name": "Small All Fish Platter (48 pc.) - feeds 4-6", "description": "All fish, no plain veg", "price": 50.00, "modifiers": [] },
+          { "id": "platter_medium_fish", "name": "Medium All Fish Platter (80 pc.) - feeds 8-10", "description": "All fish, no plain veg", "price": 80.00, "modifiers": [] },
+          { "id": "platter_large_fish", "name": "Large All Fish Platter (112 pc.) - feeds 10-14", "description": "All fish, no plain veg", "price": 110.00, "modifiers": [] },
+          { "id": "platter_xl_fish", "name": "XL VIP Platter All Fish (136 pc.) - feeds 14-18", "description": "All fish, no plain veg", "price": 130.00, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "deluxe_platters",
+        "name": "Deluxe Platters",
+        "items": [
+          { "id": "deluxe_small", "name": "Small Deluxe (14 in. Square)", "description": "6 specialty and 2 reg rolls on elegant square platter", "price": 55.00, "modifiers": [] },
+          { "id": "deluxe_medium", "name": "Medium Deluxe (16 in. Square)", "price": 85.00, "modifiers": [] },
+          { "id": "deluxe_large", "name": "Large Deluxe (18 in. Square)", "price": 100.00, "modifiers": [] },
+          { "id": "sashimi_platter_small", "name": "Small Sashimi Platter (14 in. Square)", "description": "Assorted sashimi", "price": 55.00, "modifiers": [] },
+          { "id": "sushi_gift_box", "name": "Sushi Gift Box", "price": 130.00, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "boba_tea",
+        "name": "Boba Tea",
+        "items": [
+          { "id": "boba_watermelon_pomegranate", "name": "BOBA Watermelon Pomegranate", "price": 7.00, "modifiers": [] },
+          { "id": "boba_tropical_strawberry", "name": "BOBA Tropical Tango Strawberry", "price": 7.00, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "drinks",
+        "name": "Drinks",
+        "items": [
+          { "id": "water", "name": "Water", "price": 2.00, "modifiers": [] },
+          { "id": "soda_can", "name": "Soda Can", "price": 2.00, "modifiers": [] },
+          { "id": "snapple", "name": "Snapple", "price": 3.00, "modifiers": [] },
+          { "id": "vitamin_water", "name": "Vitamin Water", "price": 3.00, "modifiers": [] },
+          { "id": "gameplan", "name": "Gameplan", "price": 3.00, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "extra_sauce_rice",
+        "name": "Extra Sauce & Rice",
+        "items": [
+          { "id": "spicy_mayo_bottle_8oz", "name": "Spicy Mayo (8 oz Bottle)", "price": 5.00, "modifiers": [] },
+          { "id": "sweet_sauce_bottle_8oz", "name": "Sweet Sauce (8 oz Bottle)", "price": 6.00, "modifiers": [] },
+          { "id": "wasabi_mayo_bottle_8oz", "name": "Wasabi Mayo (8 oz Bottle)", "price": 7.00, "modifiers": [] },
+          { "id": "ginger_dressing_bottle_8oz", "name": "Ginger Dressing (8 oz Bottle)", "price": 7.00, "modifiers": [] },
+          { "id": "soy_sauce_bottle_5oz", "name": "Soy Sauce (5 oz Bottle)", "price": 5.00, "modifiers": [] },
+          { "id": "soy_sauce_low_sodium_5oz", "name": "Soy Sauce Low Sodium (5 oz Bottle)", "price": 5.00, "modifiers": [] },
+          { "id": "sushi_rice_8oz", "name": "Sushi Rice (8 oz)", "price": 3.50, "modifiers": [] },
+          { "id": "sushi_rice_1lb", "name": "Sushi Rice (1 lb)", "price": 6.00, "modifiers": [] },
+          { "id": "sushi_rice_2lb", "name": "Sushi Rice (2 lb)", "price": 10.50, "modifiers": [] },
+          { "id": "soy_sauce_5packs", "name": "Soy Sauce (5 Packs)", "price": 1.50, "modifiers": [] },
+          { "id": "spicy_mayo_1_5oz", "name": "Spicy Mayo (1.5 oz)", "price": 0.50, "modifiers": [] },
+          { "id": "sweet_sauce_1_5oz", "name": "Sweet Sauce (1.5 oz)", "price": 0.50, "modifiers": [] },
+          { "id": "wasabi_mayo_1_5oz", "name": "Wasabi Mayo (1.5 oz)", "price": 0.50, "modifiers": [] },
+          { "id": "sriracha_1_5oz", "name": "Sriracha (1.5 oz)", "price": 0.50, "modifiers": [] },
+          { "id": "caesar_1_5oz", "name": "Caesar (1.5 oz)", "price": 0.50, "modifiers": [] },
+          { "id": "ginger_1_5oz", "name": "Ginger (1.5 oz)", "price": 0.50, "modifiers": [] },
+          { "id": "balsamic_1_5oz", "name": "Balsamic (1.5 oz)", "price": 0.50, "modifiers": [] },
+          { "id": "buffalo_1_5oz", "name": "Buffalo (1.5 oz)", "price": 1.00, "modifiers": [] },
+          { "id": "ginger_dressing_1_5oz", "name": "Ginger Dressing (1.5 oz)", "price": 0.50, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "shabbos_specials",
+        "name": "Shabbos Specials",
+        "description": "Available for Shabbos orders only",
+        "items": [
+          {
+            "id": "erev_shabbos_platter",
+            "name": "Erev Shabbos Special Platter (3 fish, 3 veg)",
+            "description": "All regular rolls, no modifications",
+            "price": 36.00,
+            "modifiers": []
+          },
+          {
+            "id": "shalosh_seudos_platter",
+            "name": "Shalosh Seudos Platter",
+            "description": "All seaweed out and no avocado, take out of fridge 2 hours prior to serving",
+            "price": 36.00,
+            "modifiers": []
+          },
+          {
+            "id": "shabbos_cured_fish_combo",
+            "name": "Sushi Grade Cured Fish Combo",
+            "description": "Premium cured fish cuts",
+            "price": 18.00,
+            "modifiers": []
+          },
+          {
+            "id": "shabbos_cured_tuna",
+            "name": "Sushi Grade Cured Tuna",
+            "price": 18.00,
+            "modifiers": []
+          }
+        ]
+      }
+    ]
+  }
+}

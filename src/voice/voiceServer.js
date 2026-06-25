@@ -9,12 +9,16 @@ const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 
 
 const ConversationEngine = require('../conversation/conversationEngine');
-const restaurantConfig = require('../config/restaurantConfig');
-const hotBagelsConfig  = require('../config/hotBagelsConfig');
+const restaurantConfig  = require('../config/restaurantConfig');
+const hotBagelsConfig   = require('../config/hotBagelsConfig');
+const sushiSpotConfig   = require('../config/sushiSpotConfig');
+const pizzaPlaceConfig  = require('../config/pizzaPlaceConfig');
 
 const RESTAURANT_CONFIGS = {
-  tonys:     restaurantConfig,
-  hotbagels: hotBagelsConfig,
+  tonys:      restaurantConfig,
+  hotbagels:  hotBagelsConfig,
+  sushi:      sushiSpotConfig,
+  pizza:      pizzaPlaceConfig,
 };
 
 const PORT = process.env.PORT || 3000;

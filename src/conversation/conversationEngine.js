@@ -74,11 +74,14 @@ class ConversationEngine {
     while (iterations < MAX_TOOL_ITERATIONS) {
       iterations++;
 
+      // Keep last 20 messages to limit token usage per API call
+      const trimmedHistory = this.history.slice(-20);
+
       const res = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: this.systemPrompt },
-          ...this.history,
+          ...trimmedHistory,
         ],
         tools: TOOL_DEFINITIONS,
         tool_choice: 'auto',
@@ -161,6 +164,16 @@ class ConversationEngine {
     const { restaurantInfo, specialTerminology, faqKnowledgeBase, storeSpecificInstructions } = this.config;
 
     return `You are the ordering assistant for ${restaurantInfo.name}. You take phone orders accurately and naturally, exactly like a skilled human order taker.
+
+VOICE FORMAT — READ THIS FIRST:
+You are speaking on a phone call. Your words are read aloud by a text-to-speech engine.
+- NEVER use markdown. No asterisks, no stars, no bullet points, no dashes, no bold, no numbered lists.
+- NEVER read out a list of options unless the customer explicitly asks "what are my options?" or "what do you have?"
+- When a required modifier is missing, ask for it in ONE natural question: "What bagel would you like with that?" — not a list of 15 options.
+- Keep every response to 1 to 3 spoken sentences. Short and natural.
+- When confirming an item was added, say it conversationally: "Got it, one tuna sandwich on sesame with pickles." Not a formatted summary.
+- When reading back the full order at confirmation, speak it naturally like a person: "You have a tuna sandwich on sesame, a large coffee, and a challah. Total is twenty-two dollars."
+- Never say "star star" or read punctuation symbols out loud. Never use formatting characters in your speech.
 
 TOOLS AVAILABLE:
 - search_menu(query): Search for menu items. Call this BEFORE every add_to_cart — no exceptions.

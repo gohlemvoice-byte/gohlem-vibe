@@ -1,0 +1,56 @@
+'use strict';
+
+const path = require('path');
+
+module.exports = {
+  restaurantInfo: {
+    name: 'That Sushi Spot',
+    location: 'Lakewood, NJ',
+    pickupHours: 'Monday-Thursday 10:30am-9pm, Friday 10:30am-2:30pm, Saturday 7:30pm-11:30pm, Sunday 10:30am-9pm',
+    deliveryHours: 'Monday-Thursday 10:30am-9pm, Friday 10:30am-2:30pm, Saturday 7:30pm-11:30pm, Sunday 10:30am-9pm',
+    orderTypes: ['pickup', 'delivery'],
+    deliveryMinimum: 20.00,
+    deliveryRadiusMiles: 5,
+    version: 'Bravo',
+  },
+
+  menuFile: path.join(__dirname, '../../menus/that_sushi_spot.json'),
+
+  cateringItemIds: [],
+
+  specialTerminology: `
+    kani = imitation crab
+    crab = kani (imitation crab, not real crab)
+    nigiri = single piece of fish over rice
+    sashimi = fish over cucumber, no rice
+    maki = sushi roll
+    roll = sushi roll
+    spicy = spicy version (e.g. spicy salmon roll, spicy tuna roll)
+    hand roll = sushi burrito
+    poke = poke bowl
+    edamame = boiled soy beans
+  `,
+
+  faqKnowledgeBase: `
+    We are a kosher establishment under reliable hashgacha.
+    All sushi is kosher certified.
+    Hours: Monday-Thursday 10:30am-9pm, Friday 10:30am-2:30pm, Saturday 7:30pm-11:30pm, Sunday 10:30am-9pm.
+    Delivery minimum: $20.00.
+    All rolls available with white or brown rice unless otherwise noted.
+    Shabbos specials are available for Shabbos orders only.
+    Party platters are available — assorted chef's choice.
+    Allergens: please inform us of any allergies. We cannot guarantee allergen-free preparation.
+  `,
+
+  storeSpecificInstructions: `
+    RICE CHOICE: All sushi rolls require a rice choice (white or brown). If customer does not specify, ask: "White rice or brown rice?"
+
+    PARTY PLATTERS: When customer asks about platters for a group, ask how many people and present the size options.
+
+    SHABBOS SPECIALS: Only available for Shabbos orders. If customer orders on a weekday, let them know.
+
+    DELIVERY ORDERS: Always capture the full delivery address before finalizing.
+
+    RAW FISH: Some items contain raw fish. If customer asks about raw vs cooked options, clarify based on the item description.
+  `,
+};

@@ -45,7 +45,7 @@ class MenuEngine {
     return this;
   }
 
-  // Accepts flat items[] (Tony's format) or nested menu.categories[].items[] (Hot Bagels format).
+  // Accepts flat items[] (Tony's format) or nested menu.categories[].items[] (Hot Bagels / sushi format).
   _normalize(data) {
     let rawItems = [];
 
@@ -60,11 +60,39 @@ class MenuEngine {
     }
 
     return rawItems.map(item => ({
-      ...item,
+      ...this._canonicalizeItem(item),
       available: item.available !== false,
       nameTokens: this._tokenize(item.name),
       descTokens: this._tokenize(item.description || ''),
     }));
+  }
+
+  // Convert sushi/pizza schema (modifiers, max_select, price_delta, price) to
+  // canonical schema (modifier_groups, max_selections, price, base_price).
+  _canonicalizeItem(item) {
+    const out = { ...item };
+
+    // base_price: use existing base_price, or fall back to price
+    if (out.base_price === undefined && out.price !== undefined) {
+      out.base_price = out.price;
+    }
+
+    // modifier_groups: convert from modifiers array if needed
+    if (!out.modifier_groups && Array.isArray(out.modifiers)) {
+      out.modifier_groups = out.modifiers.map(g => ({
+        id: g.id,
+        name: g.name,
+        required: g.required || false,
+        max_selections: g.max_select !== undefined ? g.max_select : (g.max_selections !== undefined ? g.max_selections : 1),
+        options: (g.options || []).map(o => ({
+          id: o.id,
+          name: o.name,
+          price: o.price_delta !== undefined ? o.price_delta : (o.price !== undefined ? o.price : 0),
+        })),
+      }));
+    }
+
+    return out;
   }
 
   // ─── TOKENIZATION & NORMALIZATION ───────────────────────────────────────────

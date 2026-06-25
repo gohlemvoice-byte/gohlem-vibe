@@ -1,0 +1,1334 @@
+{
+  "restaurant": {
+    "name": "The Pizza Place",
+    "address": "100 Hillside Boulevard, Lakewood, NJ 08701",
+    "phone": "+17327301144",
+    "cuisine": "Kosher Pizza / Italian",
+    "pos": "Toast",
+    "toast_url": "https://order.toasttab.com/online/the-pizza-place-lakewood-100-hillside-boulevard",
+    "hours": {
+      "sunday": "10:45 AM - 7:00 PM",
+      "monday": "10:45 AM - 7:00 PM",
+      "tuesday": "10:45 AM - 7:00 PM",
+      "wednesday": "10:45 AM - 7:00 PM",
+      "thursday": "10:45 AM - 8:00 PM",
+      "friday": "10:45 AM - 1:45 PM",
+      "saturday": "Closed (opens post-Shabbos ~9:30 PM)"
+    }
+  },
+  "menu": {
+    "categories": [
+      {
+        "id": "pizza_pie",
+        "name": "Pizza Pie",
+        "items": [
+          {
+            "id": "regular_pie",
+            "name": "Regular Pie",
+            "description": "Classic pizza - pizza sauce and mozzarella",
+            "price": 23.00,
+            "modifiers": []
+          },
+          {
+            "id": "vegetable_pie",
+            "name": "Vegetable Pie",
+            "description": "Pizza sauce, mozzarella, peppers, mushroom and onions",
+            "price": 29.99,
+            "modifiers": []
+          },
+          {
+            "id": "mushroom_pie",
+            "name": "Mushroom Pie",
+            "description": "Pizza sauce, mozzarella and mushrooms",
+            "price": 29.99,
+            "modifiers": []
+          },
+          {
+            "id": "olive_pie",
+            "name": "Olive Pie",
+            "description": "Pizza sauce, mozzarella and olives",
+            "price": 29.99,
+            "modifiers": []
+          },
+          {
+            "id": "jalapeno_onion_pie",
+            "name": "Jalapeño & Onion Pie",
+            "description": "Pizza sauce, mozzarella, jalapeño and purple onions",
+            "price": 29.99,
+            "modifiers": []
+          },
+          {
+            "id": "sauteed_onion_pie",
+            "name": "Sautéed Onion Pie",
+            "description": "Pizza sauce, mozzarella and sautéed onions",
+            "price": 29.99,
+            "modifiers": []
+          },
+          {
+            "id": "ziti_pie",
+            "name": "Ziti Pie",
+            "description": "Ziti in penne alla vodka sauce, topped with mozzarella",
+            "price": 34.99,
+            "modifiers": []
+          },
+          {
+            "id": "eggplant_pie",
+            "name": "Eggplant Pie",
+            "description": "Fried eggplant, pizza sauce, mozzarella and ricotta cheese",
+            "price": 35.99,
+            "modifiers": []
+          },
+          {
+            "id": "white_pie",
+            "name": "White Pie",
+            "description": "No sauce, with mozzarella and ricotta cheeses",
+            "price": 25.99,
+            "modifiers": []
+          },
+          {
+            "id": "white_pesto_pie",
+            "name": "White Pesto Pie",
+            "description": "No sauce, with mozzarella and ricotta cheeses, topped with pesto",
+            "price": 31.99,
+            "modifiers": []
+          },
+          {
+            "id": "sicilian_pie",
+            "name": "Sicilian Pie",
+            "description": "Deep dish square pie with pizza sauce and mozzarella",
+            "price": 34.99,
+            "available": false,
+            "modifiers": []
+          },
+          {
+            "id": "pesto_sicilian_pie",
+            "name": "Pesto Sicilian Pie",
+            "description": "Deep dish square pie with pizza sauce, mozzarella topped with pesto sauce",
+            "price": 39.99,
+            "modifiers": []
+          },
+          {
+            "id": "brandon_pie",
+            "name": "Brandon Pie",
+            "description": "Double dough, double cheese and pizza sauce",
+            "price": 32.99,
+            "modifiers": []
+          },
+          {
+            "id": "specialty_double_dough_pie",
+            "name": "Specialty Double Dough Pie",
+            "description": "Double dough, double cheese, pizza sauce and toppings of the day",
+            "price": 36.99,
+            "modifiers": []
+          },
+          {
+            "id": "trump_pie",
+            "name": "Trump Pie",
+            "description": "Double dough, double cheese, onions topped with our famous Rotev",
+            "price": 36.99,
+            "modifiers": []
+          },
+          {
+            "id": "biden_pie",
+            "name": "Biden Pie",
+            "description": "Double dough, double cheese, mushrooms and onions, topped with pesto",
+            "price": 36.99,
+            "modifiers": []
+          },
+          {
+            "id": "garlic_pie",
+            "name": "Garlic Pie",
+            "description": "Double dough, cheese, fresh garlic and spices",
+            "price": 34.99,
+            "modifiers": []
+          },
+          {
+            "id": "fresh_garlic_tomato_pie",
+            "name": "Fresh Garlic & Tomato Pie",
+            "description": "Mozzarella, fresh garlic and tomato",
+            "price": 29.99,
+            "modifiers": []
+          },
+          {
+            "id": "grandma_pie",
+            "name": "Grandma Pie",
+            "description": "Square pie, cheese, topped with pesto and marinara",
+            "price": 36.99,
+            "modifiers": []
+          },
+          {
+            "id": "specialty_grandma_pie",
+            "name": "Specialty Grandma Pie",
+            "description": "Square pie, cheese, topped with jalapeño, sautéed onions, purple onions, ricotta and BBQ sauce",
+            "price": 38.99,
+            "modifiers": []
+          },
+          {
+            "id": "cheeseless_pie",
+            "name": "Cheeseless Pie",
+            "description": "Only pizza sauce",
+            "price": 18.99,
+            "modifiers": []
+          },
+          {
+            "id": "vegetable_cheeseless_pie",
+            "name": "Vegetable Cheeseless Pie",
+            "description": "Only pizza sauce, peppers, mushroom and onions",
+            "price": 27.99,
+            "modifiers": []
+          },
+          {
+            "id": "french_fries_pie",
+            "name": "French Fries Pie",
+            "description": "Classic pizza topped with fries",
+            "price": 29.99,
+            "modifiers": []
+          },
+          {
+            "id": "frozen_pie",
+            "name": "Frozen Pie",
+            "description": "Frozen pizza pie",
+            "price": 12.00,
+            "modifiers": []
+          },
+          {
+            "id": "sourdough_personal_pie",
+            "name": "Sourdough Personal Pie",
+            "description": "Personal sourdough crust pizza",
+            "price": 16.49,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "whole_wheat_pizza",
+        "name": "Whole Wheat Pizza Pie",
+        "items": [
+          {
+            "id": "whole_wheat_pie",
+            "name": "Whole Wheat Pie",
+            "description": "Whole wheat dough, pizza sauce and mozzarella",
+            "price": 28.99,
+            "modifiers": []
+          },
+          {
+            "id": "whole_wheat_vegetable_pie",
+            "name": "Whole Wheat Vegetable Pie",
+            "description": "Whole wheat dough, pizza sauce, mozzarella, peppers, mushroom and onions",
+            "price": 34.99,
+            "modifiers": []
+          },
+          {
+            "id": "whole_wheat_half_vegetable_pie",
+            "name": "Whole Wheat Half Vegetable Pie",
+            "description": "Whole wheat dough, half vegetable half plain",
+            "price": 30.99,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "custom_pizza",
+        "name": "Custom Pizza Pie",
+        "items": [
+          {
+            "id": "custom_vegetable_pie",
+            "name": "Custom Vegetable Pie",
+            "description": "Customize a vegetable pie — pick your veggies on both halves",
+            "price": 29.99,
+            "modifiers": [
+              {
+                "id": "custom_pie_veggies",
+                "name": "Choose Your Vegetables",
+                "required": true,
+                "min_select": 1,
+                "max_select": 6,
+                "options": [
+                  { "id": "cpv_peppers", "name": "Peppers", "price_delta": 0.00 },
+                  { "id": "cpv_mushrooms", "name": "Mushrooms", "price_delta": 0.00 },
+                  { "id": "cpv_onions", "name": "Onions", "price_delta": 0.00 },
+                  { "id": "cpv_olives", "name": "Olives", "price_delta": 0.00 },
+                  { "id": "cpv_jalapeno", "name": "Jalapeño", "price_delta": 0.00 },
+                  { "id": "cpv_purple_onions", "name": "Purple Onions", "price_delta": 0.00 },
+                  { "id": "cpv_garlic", "name": "Garlic", "price_delta": 0.00 },
+                  { "id": "cpv_tomato", "name": "Tomato", "price_delta": 0.00 },
+                  { "id": "cpv_eggplant", "name": "Eggplant", "price_delta": 0.00 },
+                  { "id": "cpv_spinach", "name": "Spinach", "price_delta": 0.00 },
+                  { "id": "cpv_broccoli", "name": "Broccoli", "price_delta": 0.00 },
+                  { "id": "cpv_zucchini", "name": "Zucchini", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "custom_half_veg_half_plain",
+            "name": "Custom Half Vegetable Half Plain Pie",
+            "description": "Customize a half vegetable half plain pie — pick your veggies",
+            "price": 26.99,
+            "modifiers": [
+              {
+                "id": "half_pie_veggies",
+                "name": "Choose Vegetables for Half",
+                "required": true,
+                "min_select": 1,
+                "max_select": 4,
+                "options": [
+                  { "id": "hpv_peppers", "name": "Peppers", "price_delta": 0.00 },
+                  { "id": "hpv_mushrooms", "name": "Mushrooms", "price_delta": 0.00 },
+                  { "id": "hpv_onions", "name": "Onions", "price_delta": 0.00 },
+                  { "id": "hpv_olives", "name": "Olives", "price_delta": 0.00 },
+                  { "id": "hpv_jalapeno", "name": "Jalapeño", "price_delta": 0.00 },
+                  { "id": "hpv_purple_onions", "name": "Purple Onions", "price_delta": 0.00 },
+                  { "id": "hpv_garlic", "name": "Garlic", "price_delta": 0.00 },
+                  { "id": "hpv_tomato", "name": "Tomato", "price_delta": 0.00 },
+                  { "id": "hpv_eggplant", "name": "Eggplant", "price_delta": 0.00 },
+                  { "id": "hpv_spinach", "name": "Spinach", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "gluten_free",
+        "name": "Gluten Free",
+        "items": [
+          {
+            "id": "gluten_free_pie",
+            "name": "Gluten Free Pie",
+            "description": "Gluten free (made with potato starch) 8\" pie with sauce and cheese",
+            "price": 13.99,
+            "modifiers": []
+          },
+          {
+            "id": "gluten_free_vegetable_pie",
+            "name": "Gluten Free Vegetable Pie",
+            "description": "Gluten free (made with potato starch) 8\" pie with sauce, cheese and vegetables",
+            "price": 15.99,
+            "modifiers": []
+          },
+          {
+            "id": "gluten_free_french_fries",
+            "name": "Gluten Free French Fries",
+            "price": 7.49,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "pizza_wraps",
+        "name": "Pizza Wrap",
+        "items": [
+          {
+            "id": "pizza_wrap",
+            "name": "Pizza Wrap",
+            "description": "Pizza sauce and cheese on a whole wheat wrap",
+            "price": 9.49,
+            "modifiers": []
+          },
+          {
+            "id": "vegetable_pizza_wrap",
+            "name": "Vegetable Pizza Wrap",
+            "description": "Pizza sauce and cheese on a whole wheat wrap with choice of vegetables",
+            "price": 11.99,
+            "modifiers": [
+              {
+                "id": "pizza_wrap_veggies",
+                "name": "Choose Vegetables",
+                "required": true,
+                "min_select": 1,
+                "max_select": 4,
+                "options": [
+                  { "id": "pwv_peppers", "name": "Peppers", "price_delta": 0.00 },
+                  { "id": "pwv_mushrooms", "name": "Mushrooms", "price_delta": 0.00 },
+                  { "id": "pwv_onions", "name": "Onions", "price_delta": 0.00 },
+                  { "id": "pwv_olives", "name": "Olives", "price_delta": 0.00 },
+                  { "id": "pwv_jalapeno", "name": "Jalapeño", "price_delta": 0.00 },
+                  { "id": "pwv_eggplant", "name": "Eggplant", "price_delta": 0.00 },
+                  { "id": "pwv_spinach", "name": "Spinach", "price_delta": 0.00 },
+                  { "id": "pwv_broccoli", "name": "Broccoli", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "custom_wrap",
+            "name": "Custom Wrap",
+            "price": 10.49,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "calzone",
+        "name": "Calzone",
+        "items": [
+          {
+            "id": "vegetable_calzone",
+            "name": "Vegetable Calzone",
+            "description": "Peppers, mushrooms, onion, mozzarella",
+            "price": 7.69,
+            "modifiers": []
+          },
+          {
+            "id": "mushroom_calzone",
+            "name": "Mushroom Calzone",
+            "description": "Mushrooms, mozzarella",
+            "price": 7.69,
+            "modifiers": []
+          },
+          {
+            "id": "broccoli_calzone",
+            "name": "Broccoli Calzone",
+            "description": "Broccoli, mozzarella",
+            "price": 7.69,
+            "modifiers": []
+          },
+          {
+            "id": "spinach_calzone",
+            "name": "Spinach Calzone",
+            "description": "Spinach, mozzarella",
+            "price": 7.69,
+            "modifiers": []
+          },
+          {
+            "id": "eggplant_stromboli",
+            "name": "Eggplant Stromboli",
+            "description": "Fried eggplant, mozzarella and marinara",
+            "price": 7.69,
+            "modifiers": []
+          },
+          {
+            "id": "cream_cheese_roll",
+            "name": "Cream Cheese Roll",
+            "description": "Available Thursdays only",
+            "price": 3.99,
+            "modifiers": []
+          },
+          {
+            "id": "pizza_roll",
+            "name": "Pizza Roll",
+            "description": "Pizza sauce and mozzarella in a fried pizza pocket",
+            "price": 7.69,
+            "modifiers": []
+          },
+          {
+            "id": "cheese_pretzel",
+            "name": "Cheese Pretzel",
+            "description": "Ring of dough filled with mozzarella",
+            "price": 7.49,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "pizza_station",
+        "name": "Pizza Station",
+        "description": "Ingredients and dough for home pizza making",
+        "items": [
+          { "id": "pizza_dough", "name": "Pizza Dough", "description": "Perfect for 18\" pie", "price": 5.00, "modifiers": [] },
+          { "id": "whole_wheat_pizza_dough", "name": "Whole Wheat Pizza Dough", "description": "Perfect for 18\" pie", "price": 6.25, "modifiers": [] },
+          { "id": "pizza_sauce_half_lb", "name": "Pizza Sauce (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "pizza_sauce_1lb", "name": "Pizza Sauce (1 LB)", "price": 7.99, "modifiers": [] },
+          { "id": "mozzarella_half_lb", "name": "Mozzarella Cheese (0.5 LB)", "price": 5.99, "modifiers": [] },
+          { "id": "mozzarella_1lb", "name": "Mozzarella Cheese (1 LB)", "price": 11.99, "modifiers": [] },
+          { "id": "parmesan_2oz", "name": "Parmesan Cheese (2 oz)", "price": 3.99, "modifiers": [] },
+          { "id": "parmesan_4oz", "name": "Parmesan Cheese (4 oz)", "price": 7.99, "modifiers": [] },
+          { "id": "make_your_own", "name": "Make Your Own", "price": 9.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "pasta",
+        "name": "Pasta",
+        "items": [
+          {
+            "id": "penne_ala_vodka",
+            "name": "Penne à la Vodka",
+            "description": "Penne mixed with our delicious penne vodka sauce",
+            "price": 13.99,
+            "modifiers": []
+          },
+          {
+            "id": "mac_and_cheese",
+            "name": "Macaroni & Cheese",
+            "description": "Macaroni with cheese sauce",
+            "price": 14.99,
+            "modifiers": []
+          },
+          {
+            "id": "fettuccine_alfredo",
+            "name": "Fettuccine Alfredo",
+            "description": "Fettuccine mixed with our delicious alfredo sauce",
+            "price": 14.49,
+            "modifiers": []
+          },
+          {
+            "id": "baked_ziti",
+            "name": "Baked Ziti",
+            "description": "Casserole with ziti pasta and marinara sauce",
+            "price": 14.49,
+            "modifiers": []
+          },
+          {
+            "id": "eggplant_parmesian",
+            "name": "Eggplant Parmesan",
+            "description": "Eggplant parmesan with side of pasta marinara",
+            "price": 16.99,
+            "modifiers": []
+          },
+          {
+            "id": "cheese_ravioli",
+            "name": "Cheese Ravioli",
+            "description": "Cheese ravioli with marinara",
+            "price": 13.99,
+            "modifiers": []
+          },
+          {
+            "id": "spinach_cheese_ravioli",
+            "name": "Spinach & Cheese Ravioli",
+            "description": "Spinach & cheese ravioli with marinara",
+            "price": 13.99,
+            "modifiers": []
+          },
+          {
+            "id": "pizza_ravioli",
+            "name": "Pizza Ravioli",
+            "description": "Pizza ravioli with marinara",
+            "price": 13.99,
+            "modifiers": []
+          },
+          {
+            "id": "stuffed_shells",
+            "name": "Stuffed Shells",
+            "description": "Jumbo shells stuffed with ricotta & mozzarella in marinara sauce",
+            "price": 13.99,
+            "modifiers": []
+          },
+          {
+            "id": "cheese_lasagna",
+            "name": "Cheese Lasagna",
+            "price": 13.99,
+            "modifiers": []
+          },
+          {
+            "id": "vegetable_lasagna",
+            "name": "Vegetable Lasagna",
+            "description": "Vegetable lasagna with ricotta, eggplant, zucchini, and mushrooms",
+            "price": 15.99,
+            "modifiers": []
+          },
+          {
+            "id": "plain_pasta",
+            "name": "Plain Pasta",
+            "description": "Pasta of choice (no sauce)",
+            "price": 7.99,
+            "modifiers": [
+              {
+                "id": "pasta_type",
+                "name": "Pasta Type",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "pt_penne", "name": "Penne", "price_delta": 0.00 },
+                  { "id": "pt_spaghetti", "name": "Spaghetti", "price_delta": 0.00 },
+                  { "id": "pt_fettuccine", "name": "Fettuccine", "price_delta": 0.00 },
+                  { "id": "pt_ziti", "name": "Ziti", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "pasta_marinara",
+            "name": "Pasta Marinara",
+            "description": "Pasta of choice with marinara",
+            "price": 8.99,
+            "modifiers": [
+              {
+                "id": "pasta_type",
+                "name": "Pasta Type",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "pt_penne", "name": "Penne", "price_delta": 0.00 },
+                  { "id": "pt_spaghetti", "name": "Spaghetti", "price_delta": 0.00 },
+                  { "id": "pt_fettuccine", "name": "Fettuccine", "price_delta": 0.00 },
+                  { "id": "pt_ziti", "name": "Ziti", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "pasta_oil_garlic",
+            "name": "Pasta with Oil & Garlic",
+            "description": "Pasta of choice with oil & garlic",
+            "price": 8.99,
+            "modifiers": [
+              {
+                "id": "pasta_type",
+                "name": "Pasta Type",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "pt_penne", "name": "Penne", "price_delta": 0.00 },
+                  { "id": "pt_spaghetti", "name": "Spaghetti", "price_delta": 0.00 },
+                  { "id": "pt_fettuccine", "name": "Fettuccine", "price_delta": 0.00 },
+                  { "id": "pt_ziti", "name": "Ziti", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "fish",
+        "name": "Fish",
+        "description": "All fish plates come with a choice of 2 sides",
+        "items": [
+          {
+            "id": "grilled_salmon",
+            "name": "Grilled Salmon",
+            "description": "Grilled salmon with a choice of 2 side dishes",
+            "price": 23.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "teriyaki_salmon",
+            "name": "Teriyaki Salmon",
+            "description": "Teriyaki salmon with a choice of 2 side dishes",
+            "price": 23.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "honey_mustard_salmon",
+            "name": "Honey Mustard Salmon",
+            "description": "Honey mustard salmon with a choice of 2 side dishes",
+            "price": 23.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "lemon_butter_salmon",
+            "name": "Lemon Butter Salmon",
+            "description": "Lemon butter salmon with a choice of 2 side dishes",
+            "price": 27.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "blackened_salmon",
+            "name": "Blackened Salmon",
+            "description": "Black pepper crusted salmon with a choice of 2 side dishes",
+            "price": 23.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "moroccan_salmon",
+            "name": "Moroccan Salmon",
+            "description": "Moroccan salmon with a choice of 2 side dishes",
+            "price": 27.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "grilled_tilapia",
+            "name": "Grilled Tilapia",
+            "description": "Grilled tilapia with a choice of 2 side dishes",
+            "price": 22.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "teriyaki_tilapia",
+            "name": "Teriyaki Tilapia",
+            "description": "Teriyaki tilapia with a choice of 2 side dishes",
+            "price": 21.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "lemon_butter_tilapia",
+            "name": "Lemon Butter Tilapia",
+            "description": "Lemon butter tilapia with a choice of 2 side dishes",
+            "price": 25.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "grilled_tuna_steak",
+            "name": "Grilled Tuna Steak",
+            "description": "Grilled tuna steak with a choice of 2 side dishes",
+            "price": 25.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "teriyaki_tuna_steak",
+            "name": "Teriyaki Tuna Steak",
+            "description": "Grilled teriyaki tuna steak with a choice of 2 side dishes",
+            "price": 25.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "garlic_oil_tuna_steak",
+            "name": "Garlic & Oil Tuna Steak",
+            "description": "Grilled tuna steak with garlic and oil and a choice of 2 side dishes",
+            "price": 25.99,
+            "modifiers": [
+              {
+                "id": "fish_sides",
+                "name": "Fish Sides",
+                "required": true,
+                "min_select": 1,
+                "max_select": 2,
+                "options": [
+                  { "id": "fs_french_fries", "name": "French Fries", "price_delta": 0.00 },
+                  { "id": "fs_spicy_fries", "name": "Spicy Fries", "price_delta": 0.00 },
+                  { "id": "fs_sweet_potato_fries", "name": "Sweet Potato Fries", "price_delta": 1.49 },
+                  { "id": "fs_steak_fries", "name": "Steak Fries", "price_delta": 1.49 },
+                  { "id": "fs_onion_rings", "name": "Onion Rings", "price_delta": 1.49 },
+                  { "id": "fs_mashed_potatoes", "name": "Mashed Potatoes", "price_delta": 0.00 },
+                  { "id": "fs_brown_rice", "name": "Brown Rice", "price_delta": 0.00 },
+                  { "id": "fs_grilled_vegetables", "name": "Grilled Vegetables", "price_delta": 0.00 },
+                  { "id": "fs_baked_sweet_potato", "name": "Baked Sweet Potato", "price_delta": 0.00 },
+                  { "id": "fs_israeli_salad", "name": "Israeli Salad", "price_delta": 0.00 }
+                ]
+              },
+              {
+                "id": "fish_temp",
+                "name": "Fish Temp",
+                "required": false,
+                "min_select": 0,
+                "max_select": 1,
+                "options": [
+                  { "id": "ft_rare", "name": "Rare", "price_delta": 0.00 },
+                  { "id": "ft_medium", "name": "Medium", "price_delta": 0.00 },
+                  { "id": "ft_well_done", "name": "Well Done", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "fish_tacos",
+            "name": "Fish Tacos",
+            "description": "Battered and fried tilapia with pico de gallo",
+            "price": 18.49,
+            "available": false,
+            "modifiers": []
+          },
+          {
+            "id": "fish_and_chips",
+            "name": "Fish & Chips",
+            "description": "Fried flounder with a side of steak fries",
+            "price": 18.99,
+            "modifiers": []
+          },
+          {
+            "id": "fish_no_sides",
+            "name": "Fish (No Sides)",
+            "description": "Choice of salmon, tilapia or tuna",
+            "price": 14.99,
+            "modifiers": [
+              {
+                "id": "fish_no_sides_choice",
+                "name": "Fish Choice",
+                "required": true,
+                "min_select": 1,
+                "max_select": 1,
+                "options": [
+                  { "id": "fnsc_salmon", "name": "Salmon", "price_delta": 0.00 },
+                  { "id": "fnsc_tilapia", "name": "Tilapia", "price_delta": 0.00 },
+                  { "id": "fnsc_tuna", "name": "Tuna", "price_delta": 0.00 }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "fish_sticks",
+            "name": "Fish Sticks",
+            "description": "Portion of five fish sticks",
+            "price": 5.99,
+            "modifiers": []
+          },
+          {
+            "id": "tuna_platter",
+            "name": "Tuna Platter",
+            "description": "Tuna salad, sauerkraut, pickles and Israeli salad with a hot pita",
+            "price": 15.49,
+            "modifiers": []
+          },
+          {
+            "id": "salmon_with_salad",
+            "name": "Salmon with Salad",
+            "price": 23.99,
+            "modifiers": []
+          },
+          {
+            "id": "tuna_steak_with_salad",
+            "name": "Tuna Steak with Salad",
+            "price": 24.99,
+            "modifiers": []
+          }
+        ]
+      },
+      {
+        "id": "sides",
+        "name": "Sides",
+        "items": [
+          { "id": "french_fries", "name": "French Fries", "price": 5.79, "modifiers": [] },
+          { "id": "spicy_fries", "name": "Spicy Fries", "price": 5.79, "modifiers": [] },
+          { "id": "mixed_fries", "name": "Mixed Fries", "description": "A whole portion each of regular and spicy fries", "price": 10.89, "modifiers": [] },
+          { "id": "cheese_fries", "name": "Cheese Fries", "description": "French fries topped with cheese", "price": 7.99, "modifiers": [] },
+          { "id": "pizza_fries", "name": "Pizza Fries", "description": "French fries topped with sauce and cheese", "price": 8.99, "modifiers": [] },
+          { "id": "sweet_potato_fries", "name": "Sweet Potato Fries", "price": 8.29, "modifiers": [] },
+          { "id": "steak_fries", "name": "Steak Fries", "price": 7.99, "modifiers": [] },
+          { "id": "poutine", "name": "Poutine", "description": "French fries baked in gravy and cheese", "price": 13.99, "modifiers": [] },
+          { "id": "onion_rings", "name": "Onion Rings", "price": 7.49, "modifiers": [] },
+          { "id": "nachos_with_cheese", "name": "Nachos With Cheese", "description": "Corn tortilla, pico de gallo, topped with cheese sauce", "price": 15.99, "modifiers": [] },
+          { "id": "garlic_knots", "name": "Garlic Knots (5 pcs)", "description": "Portion of 5 rolls mixed in fresh garlic, oil and spices", "price": 2.99, "modifiers": [] },
+          { "id": "garlic_knot_pc", "name": "Garlic Knot (Single)", "price": 0.75, "modifiers": [] },
+          { "id": "mozzarella_sticks", "name": "Mozzarella Sticks (4 pcs)", "description": "Portion of 4 fresh mozzarella sticks", "price": 6.99, "modifiers": [] },
+          { "id": "mashed_potatoes", "name": "Mashed Potatoes", "price": 5.99, "modifiers": [] },
+          { "id": "baked_sweet_potato", "name": "Baked Sweet Potato", "price": 3.99, "modifiers": [] },
+          { "id": "saute_vegetables", "name": "Sauté Vegetables", "price": 7.49, "modifiers": [] },
+          { "id": "brown_rice", "name": "Brown Rice", "price": 4.99, "modifiers": [] },
+          { "id": "latkes", "name": "Latkes", "price": 4.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "blintzes",
+        "name": "Blintzes",
+        "items": [
+          { "id": "cheese_blintzes", "name": "Cheese Blintzes", "description": "Portion of two cheese blintzes", "price": 5.99, "modifiers": [] },
+          { "id": "potato_blintzes", "name": "Potato Blintzes", "price": 4.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "panini",
+        "name": "Panini",
+        "items": [
+          { "id": "grilled_vegetable_panini", "name": "Grilled Vegetable Panini", "description": "Roasted red pepper, onion, mushrooms, and zucchini", "price": 10.99, "modifiers": [] },
+          { "id": "italian_panini", "name": "Italian Panini", "description": "Eggplant, marinara, mozzarella", "price": 10.99, "modifiers": [] },
+          { "id": "avocado_egg_panini", "name": "Avocado & Egg Panini", "description": "Avocado, sliced egg, tomato, red onion, mozzarella", "price": 10.99, "modifiers": [] },
+          { "id": "portabella_panini", "name": "Portobella Panini", "description": "Portobella, roasted red pepper, mozzarella", "price": 10.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "subs",
+        "name": "Subs",
+        "items": [
+          { "id": "tuna_sub", "name": "Tuna Sub", "description": "Lettuce, tomato, red onion", "price": 12.99, "modifiers": [] },
+          { "id": "tuna_melt", "name": "Tuna Melt", "description": "Homemade tuna salad, tomatoes, red onion, mozzarella", "price": 15.49, "modifiers": [] },
+          { "id": "teriyaki_salmon_sub", "name": "Teriyaki Salmon Sub", "description": "Salmon, lettuce, tomato & onion", "price": 18.99, "available": false, "modifiers": [] },
+          { "id": "fried_flounder_sub", "name": "Fried Flounder Sub", "description": "Avocado, red onions, lettuce, tomato, mozzarella", "price": 13.99, "available": false, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "falafel",
+        "name": "Falafel",
+        "items": [
+          { "id": "whole_falafel", "name": "Whole Falafel", "description": "Falafel with sauerkraut, pickles and Israeli salad", "price": 8.29, "modifiers": [] },
+          { "id": "falafel_balls", "name": "Falafel Balls (5 pcs)", "description": "5 falafel balls with techina", "price": 3.99, "modifiers": [] },
+          { "id": "falafel_platter", "name": "Falafel Platter", "description": "5 falafel balls, sauerkraut, pickles, Israeli salad and a hot pita", "price": 12.49, "modifiers": [] },
+          { "id": "falafel_wrap_main", "name": "Falafel Wrap", "description": "5 falafel balls with sauerkraut, pickles and Israeli salad in a whole wheat wrap", "price": 9.29, "modifiers": [] },
+          { "id": "pita_bread", "name": "Pita Bread", "price": 1.75, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "wraps",
+        "name": "Wraps",
+        "items": [
+          { "id": "tuna_wrap", "name": "Tuna Wrap", "description": "Lettuce, tomato, red onion", "price": 8.99, "modifiers": [] },
+          { "id": "falafel_wrap", "name": "Falafel Wrap", "description": "Sauerkraut, pickles and Israeli salad", "price": 8.69, "modifiers": [] },
+          { "id": "avocado_wrap", "name": "Avocado Wrap", "description": "Avocado, lettuce, red onion", "price": 8.69, "modifiers": [] },
+          { "id": "crispy_flounder_wrap", "name": "Crispy Flounder Wrap", "description": "Avocado, red onions, lettuce, tomato, mozzarella", "price": 13.99, "modifiers": [] },
+          { "id": "teriyaki_salmon_wrap", "name": "Teriyaki Salmon Wrap", "description": "Salmon, lettuce, tomato & onion", "price": 18.99, "modifiers": [] },
+          { "id": "plain_grilled_salmon_wrap", "name": "Plain Grilled Salmon Wrap", "description": "Salmon, lettuce, tomato & onion", "price": 18.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "soups",
+        "name": "Soups",
+        "items": [
+          { "id": "mushroom_barley_soup", "name": "Mushroom Barley Soup", "description": "Classic mushroom and barley soup", "price": 4.99, "modifiers": [] },
+          { "id": "vegetable_soup", "name": "Vegetable Soup", "description": "A hearty vegetable soup", "price": 4.99, "modifiers": [] },
+          { "id": "cream_of_zucchini_soup", "name": "Cream of Zucchini Soup", "description": "Creamy zucchini soup", "price": 4.99, "modifiers": [] },
+          { "id": "tomato_rice_soup", "name": "Tomato Rice Soup", "description": "Tomato and rice soup", "price": 4.99, "modifiers": [] },
+          { "id": "french_onion_soup", "name": "French Onion Soup", "description": "French onion soup with croutons and cheese", "price": 5.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "salads",
+        "name": "Salads",
+        "items": [
+          { "id": "greek_salad", "name": "Greek Salad", "description": "Lettuce, peppers, tomatoes, cucumbers, purple onions and feta cheese", "price": 13.99, "modifiers": [] },
+          { "id": "portabella_mushroom_salad", "name": "Portobella Mushroom Salad", "description": "Lettuce, cherry tomatoes, sautéed portobella mushrooms in teriyaki, topped with almond slivers", "price": 13.99, "modifiers": [], "allergens": ["nuts"] },
+          { "id": "garden_salad", "name": "Garden Salad", "description": "Lettuce, tomatoes, cucumbers and purple onions", "price": 10.99, "modifiers": [] },
+          { "id": "caesar_salad", "name": "Caesar Salad", "description": "Lettuce and croutons", "price": 9.49, "modifiers": [] },
+          { "id": "israeli_salad", "name": "Israeli Salad", "description": "Tomatoes and cucumbers", "price": 4.99, "modifiers": [] },
+          { "id": "lb_tuna", "name": "Tuna (1 LB)", "price": 16.99, "modifiers": [] },
+          { "id": "scoop_of_tuna", "name": "Scoop of Tuna", "price": 4.59, "modifiers": [] },
+          { "id": "cut_tomatoes_cucumbers", "name": "Cut Tomatoes & Cucumbers", "price": 4.99, "modifiers": [] },
+          { "id": "double_cucumbers", "name": "Double Cucumbers", "price": 4.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "sauces_dressings",
+        "name": "Sauces / Dressings",
+        "items": [
+          { "id": "extra_sauce", "name": "Extra Sauce", "price": 0.50, "modifiers": [] },
+          { "id": "vodka_sauce_1lb", "name": "Penne à la Vodka Sauce (1 LB)", "price": 9.99, "modifiers": [] },
+          { "id": "alfredo_sauce_1lb", "name": "Fettuccine Alfredo Sauce (1 LB)", "price": 9.99, "modifiers": [] },
+          { "id": "marinara_half_lb", "name": "Marinara Sauce (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "rotev_half_lb", "name": "Rotev (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "greek_dressing_half_lb", "name": "Greek Salad Dressing (0.5 LB)", "price": 5.49, "modifiers": [] },
+          { "id": "caesar_dressing_half_lb", "name": "Caesar Salad Dressing (0.5 LB)", "price": 4.99, "modifiers": [] },
+          { "id": "portabella_dressing_half_lb", "name": "Portobella Mushroom Salad Dressing (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "russian_dressing_half_lb", "name": "Russian Dressing (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "honey_mustard_half_lb", "name": "Honey Mustard (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "spicy_mayo_half_lb", "name": "Spicy Mayo (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "balsamic_half_lb", "name": "Balsamic Vinegar (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "techina_half_lb", "name": "Techina (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "chummus_half_lb", "name": "Chummus (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "charif_half_lb", "name": "Charif (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "pizza_sauce_half_lb_main", "name": "Pizza Sauce (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "pizza_sauce_1lb_main", "name": "Pizza Sauce (1 LB)", "price": 7.99, "modifiers": [] },
+          { "id": "tartar_sauce_half_lb", "name": "Tartar Sauce (0.5 LB)", "price": 3.99, "modifiers": [] },
+          { "id": "nacho_cheese_1lb", "name": "Nacho Cheese (1 LB)", "price": 11.99, "modifiers": [] },
+          { "id": "poutine_gravy_1lb", "name": "Poutine Gravy (1 LB)", "price": 8.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "drinks",
+        "name": "Drinks",
+        "items": [
+          { "id": "cold_drink", "name": "Cold Drink", "price": 2.79, "modifiers": [] },
+          { "id": "soda_bottle", "name": "Soda Bottle", "price": 2.79, "modifiers": [] },
+          { "id": "snapple", "name": "Snapple", "price": 2.79, "modifiers": [] },
+          { "id": "powerade", "name": "Powerade", "price": 2.79, "modifiers": [] },
+          { "id": "chocolate_milk", "name": "Chocolate Milk", "price": 2.79, "modifiers": [] },
+          { "id": "juice", "name": "Juice", "price": 2.79, "modifiers": [] },
+          { "id": "bottled_water", "name": "Bottled Water", "price": 2.79, "modifiers": [] },
+          { "id": "jj_iced_coffee", "name": "JJ Iced Coffee", "price": 2.79, "modifiers": [] },
+          { "id": "jj_iced_cappuccino", "name": "JJ Iced Cappuccino", "price": 2.79, "modifiers": [] },
+          { "id": "vitaminwater", "name": "Vitaminwater", "price": 2.79, "modifiers": [] },
+          { "id": "pitcher", "name": "Pitcher", "price": 5.99, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "hot_drinks",
+        "name": "Hot Drinks",
+        "items": [
+          { "id": "coffee", "name": "Coffee", "price": 1.55, "modifiers": [] },
+          { "id": "hot_cocoa", "name": "Hot Cocoa", "price": 2.59, "modifiers": [] },
+          { "id": "hot_cappuccino", "name": "Hot Cappuccino", "price": 2.59, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "breakfast",
+        "name": "Breakfast",
+        "description": "Served daily",
+        "items": [
+          { "id": "breakfast_special", "name": "Breakfast Special", "description": "3 eggs any style, side of fries, comes with small coffee", "price": 11.99, "modifiers": [] },
+          { "id": "egg_on_a_roll", "name": "Egg on a Roll", "description": "3 eggs any style on a roll", "price": 7.99, "modifiers": [] },
+          { "id": "tuna_on_a_roll", "name": "Tuna on a Roll", "price": 8.99, "modifiers": [] },
+          { "id": "buttered_roll", "name": "Buttered Roll", "price": 2.99, "modifiers": [] },
+          { "id": "breakfast_wrap", "name": "Breakfast Wrap", "description": "3 eggs any style in whole wheat wrap", "price": 6.49, "modifiers": [] },
+          { "id": "three_egg_any_style", "name": "3 Egg Any Style", "price": 4.99, "modifiers": [] },
+          { "id": "plain_roll", "name": "Plain Roll", "price": 1.99, "modifiers": [] },
+          { "id": "french_toast", "name": "French Toast", "price": 7.49, "modifiers": [] },
+          { "id": "grilled_cheese_sandwich", "name": "Grilled Cheese Sandwich", "price": 5.99, "modifiers": [] },
+          { "id": "belgian_waffles", "name": "Belgian Waffles", "price": 8.99, "modifiers": [] },
+          { "id": "shakshuka", "name": "Shakshuka", "price": 14.99, "modifiers": [] },
+          { "id": "black_white_cookie", "name": "Black & White Cookie", "price": 2.50, "modifiers": [] }
+        ]
+      },
+      {
+        "id": "catering",
+        "name": "Catering (9x13 Pans)",
+        "items": [
+          { "id": "cat_penne_vodka", "name": "Penne à la Vodka (9x13)", "price": 55.00, "modifiers": [] },
+          { "id": "cat_fettuccine_alfredo", "name": "Fettuccine Alfredo (9x13)", "price": 55.00, "modifiers": [] },
+          { "id": "cat_baked_ziti", "name": "Baked Ziti (9x13)", "price": 55.00, "modifiers": [] },
+          { "id": "cat_mac_cheese", "name": "Macaroni & Cheese (9x13)", "price": 60.00, "modifiers": [] },
+          { "id": "cat_eggplant_parm", "name": "Eggplant Parmesan (9x13)", "price": 70.00, "modifiers": [] },
+          { "id": "cat_spaghetti_marinara", "name": "Spaghetti Marinara (9x13)", "price": 44.00, "modifiers": [] },
+          { "id": "cat_penne_oil_garlic", "name": "Penne with Oil & Garlic (9x13)", "price": 44.00, "modifiers": [] },
+          { "id": "cat_cheese_ravioli", "name": "Cheese Ravioli (9x13)", "price": 55.00, "modifiers": [] },
+          { "id": "cat_spinach_ravioli", "name": "Spinach & Cheese Ravioli (9x13)", "price": 58.00, "modifiers": [] },
+          { "id": "cat_stuffed_shells", "name": "Stuffed Shells (9x13)", "price": 52.00, "modifiers": [] },
+          { "id": "cat_cheese_lasagna", "name": "Cheese Lasagna (9x13)", "price": 64.00, "modifiers": [] },
+          { "id": "cat_vegetable_lasagna", "name": "Vegetable Lasagna (9x13)", "price": 70.00, "modifiers": [] },
+          { "id": "cat_nachos", "name": "Nachos (9x13)", "price": 48.00, "modifiers": [] },
+          { "id": "cat_french_fries", "name": "French Fries (9x13)", "price": 32.00, "modifiers": [] },
+          { "id": "cat_spicy_fries", "name": "Spicy Fries (9x13)", "price": 32.00, "modifiers": [] },
+          { "id": "cat_mixed_fries", "name": "Mixed Fries (9x13)", "price": 36.00, "modifiers": [] },
+          { "id": "cat_steak_fries", "name": "Steak Fries (9x13)", "price": 34.00, "modifiers": [] },
+          { "id": "cat_sweet_potato_fries", "name": "Sweet Potato Fries (9x13)", "price": 34.00, "modifiers": [] },
+          { "id": "cat_cheese_fries", "name": "Cheese Fries (9x13)", "price": 35.00, "modifiers": [] },
+          { "id": "cat_pizza_fries", "name": "Pizza Fries (9x13)", "price": 42.00, "modifiers": [] },
+          { "id": "cat_poutine", "name": "Poutine (9x13)", "price": 50.00, "modifiers": [] },
+          { "id": "cat_onion_rings", "name": "Onion Rings (9x13)", "price": 40.00, "modifiers": [] },
+          { "id": "cat_mashed_potatoes", "name": "Mashed Potatoes (9x13)", "price": 38.00, "modifiers": [] },
+          { "id": "cat_brown_rice", "name": "Brown Rice (9x13)", "price": 38.00, "modifiers": [] },
+          { "id": "cat_sauted_vegetables", "name": "Sautéed Vegetables (9x13)", "price": 58.00, "modifiers": [] },
+          { "id": "cat_mozzarella_sticks", "name": "Mozzarella Sticks (9x13)", "price": 59.98, "modifiers": [] },
+          { "id": "cat_nachos_cheese", "name": "Nachos & Cheese (9x13)", "price": 48.00, "modifiers": [] },
+          { "id": "cat_greek_salad", "name": "Greek Salad (9x13)", "price": 58.00, "modifiers": [] },
+          { "id": "cat_portabella_salad", "name": "Portobella Mushroom Salad (9x13)", "price": 60.00, "modifiers": [] },
+          { "id": "cat_garden_salad", "name": "Garden Salad (9x13)", "price": 50.00, "modifiers": [] },
+          { "id": "cat_caesar_salad", "name": "Caesar Salad (9x13)", "price": 45.00, "modifiers": [] },
+          { "id": "cat_israeli_salad", "name": "Israeli Salad (9x13)", "price": 38.00, "modifiers": [] },
+          { "id": "cat_wrap_platter", "name": "Wrap Platter (8 wraps)", "description": "Choose 8 wraps, no modifications", "price": 0.00, "modifiers": [] }
+        ]
+      }
+    ]
+  }
+}
