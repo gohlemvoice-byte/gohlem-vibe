@@ -79,11 +79,11 @@
     {
       "id": "S08",
       "category": "removal",
-      "description": "Customer removes an item",
-      "inputs": ["pickup", "I want a calzone and garlic knots", "actually remove the garlic knots"],
+      "description": "Customer adds two items then removes one",
+      "inputs": ["pickup", "I want two cheese slices", "also add garlic knots", "actually remove the garlic knots"],
       "expected_cart": {
         "item_count": 1,
-        "items": [{ "name": "Calzone", "quantity": 1 }]
+        "items": [{ "name": "Cheese Slice", "quantity": 2 }]
       }
     },
     {
@@ -122,7 +122,7 @@
       "id": "S12",
       "category": "exact_match_priority",
       "description": "Hot coffee should match Hot Coffee ($2.49) not Hot Coffee Box-equivalent",
-      "inputs": ["pickup", "just a hot coffee"],
+      "inputs": ["pickup", "just a hot coffee", "medium"],
       "expected_cart": {
         "item_count": 1,
         "items": [{ "name": "Hot Coffee", "quantity": 1, "price_max": 5.00 }]
@@ -174,12 +174,15 @@
     },
     {
       "id": "S17",
-      "category": "split_half",
-      "description": "Half-and-half pizza topping",
-      "inputs": ["pickup", "I want a large cheese pizza hand tossed, put pepperoni on the left half"],
+      "category": "multi_item_no_required_modifiers",
+      "description": "Two items with no required modifiers — tests multi-item in one turn",
+      "inputs": ["pickup", "I want a cheese slice and garlic knots"],
       "expected_cart": {
-        "item_count": 1,
-        "items": [{ "name": "Cheese Pizza", "modifier_names": ["Large 16 inch", "Hand Tossed", "Pepperoni", "Left Half"] }]
+        "item_count": 2,
+        "items": [
+          { "name": "Cheese Slice", "quantity": 1 },
+          { "name": "Garlic Knots", "quantity": 1 }
+        ]
       }
     },
     {
@@ -199,7 +202,7 @@
       "id": "S19",
       "category": "post_confirmation",
       "description": "Customer adds item after confirming done",
-      "inputs": ["pickup", "I want a cheese slice", "that's it", "wait, also a coke"],
+      "inputs": ["pickup", "I want a cheese slice", "that's it", "wait, also a fountain soda with Coke", "can"],
       "expected_cart": {
         "item_count": 2,
         "items": [

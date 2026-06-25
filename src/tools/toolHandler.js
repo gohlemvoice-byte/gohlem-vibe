@@ -107,14 +107,23 @@ class ToolHandler {
   }
 
   _populateValidSet(items) {
-    this.validItemIds.clear();
-    this.validModifierIds.clear();
-    this.lastSearchItems = items;
-
+    // ACCUMULATE: do not clear — allow multiple parallel searches to coexist
+    // so multi-item orders can call search_menu twice before add_to_cart.
+    // The valid set is cleared per-turn (in conversationEngine.chat) and
+    // per-item (in _addToCart) so cross-turn ID reuse is still blocked.
     for (const item of items) {
       this.validItemIds.add(item.id);
       this.validModifierIds.set(item.id, this.engine.getAllOptionIds(item));
     }
+    this.lastSearchItems = [...this.lastSearchItems, ...items.filter(
+      i => !this.lastSearchItems.find(e => e.id === i.id)
+    )];
+  }
+
+  clearValidSet() {
+    this.validItemIds.clear();
+    this.validModifierIds.clear();
+    this.lastSearchItems = [];
   }
 
   // ─── add_to_cart ────────────────────────────────────────────────────────────
@@ -205,10 +214,11 @@ class ToolHandler {
 
     const cartItemId = this.cart.addItem(menuItem, modifiers, quantity, special_instructions);
 
-    // Reset valid set so next add_to_cart must call search_menu first
-    this.validItemIds.clear();
-    this.validModifierIds.clear();
-    this.lastSearchItems = [];
+    // Remove ONLY this item from the valid set. Other items searched in the
+    // same turn (parallel searches for multi-item orders) remain valid.
+    this.validItemIds.delete(item_id);
+    this.validModifierIds.delete(item_id);
+    this.lastSearchItems = this.lastSearchItems.filter(i => i.id !== item_id);
 
     const addedItem = this.cart.getItem(cartItemId);
     return {
