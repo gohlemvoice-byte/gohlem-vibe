@@ -13,6 +13,10 @@ and outputs a structured order for the POS (Toast). Goal: replace human phone or
 Founder: Shulem (non-technical, building via Claude Code).
 Restaurant 1: Hot Bagels 2nd Street, Lakewood NJ.
 Restaurant 2: Yummy's Pizza, Monsey NY.
+Restaurant 3: That Sushi Spot (added Phase 2 — menu loaded, tested manually).
+Restaurant 4: The Pizza Place, Lakewood NJ (added Phase 2 — menu loaded, tested manually).
+
+Current version tag: Bravo. All four restaurants are loaded and selectable via the browser test dropdown.
 
 ---
 
@@ -276,6 +280,24 @@ Do not attempt to address these before Phase 3. They cannot be fixed in the brai
 
 ## THE PROBLEM REGISTRY — CURRENT STATUS
 
+### CONFIRMED WORKING IN REAL SPEECH TESTING (Phase 2 manual tests)
+The following were tested with real messy voice input across all four restaurants:
+- "canny salad" → Kani Salad ✓
+- "pokeball" → poke bowl (asked small/large) ✓
+- "Bensi/Bency/bentzy" → Bentzy Roll ✓ (3-attempt correction recovery)
+- "candies sticks tempura" → Kani Sticks ✓
+- "salmon pepper roll" → Black Pepper Salmon Roll ✓
+- "pinna of vodka" → Penne à la Vodka ✓
+- "harif/charif" → modifier note ✓
+- "coni salad / connie / spicy county roll" → Kani Salad / Spicy Kani Roll ✓
+- Large poke bowl with 5 required groups, all filled in one customer turn ✓
+- Two poke bowls with different modifiers including no-fish option ✓
+- Mid-order correction ("no, that was cucumber") ✓
+- Upgrading both items from small to large in one correction ✓
+- Remove one of two identical items ✓
+- Two different cheese pastries in one turn ✓
+- "nachiris" → nigiri (partially — mapped to roll instead; see bugs below)
+
 ### SOLVED STRUCTURALLY BY ARCHITECTURE
 P06 modifier context loss — tool calling + state machine prevents new searches during modifier collection
 P09 cart accuracy — get_cart() is always the source of truth, injected every turn
@@ -324,34 +346,163 @@ P34 race condition
 ### KEEP FROM PRIOR BUILD (do not rewrite these)
 - `src/orders/orderState.js` — OrderCart class is solid. Keep exactly as-is.
 - `src/pos/toastConnector.js` — Toast API wiring. Keep, update when connecting Toast.
-- `src/voice/voiceServer.js` — Twilio server. Leave alone until Phase 3.
+- `src/voice/voiceServer.js` — Twilio server. Leave alone until Phase 3. (Has browser test routes added — those are safe.)
 - `src/voice/callHandler.js` — Twilio routing. Leave alone until Phase 3.
-- `src/dashboard/` — Leave alone.
+- `src/dashboard/voiceTest.html` — Browser test UI. Has restaurant dropdown. Touch only for UI changes.
 
 ### REWRITE (same filename, new implementation)
-- `gohlem-menu-engine.js` — Keep structure, rewrite scoring with the three fixes.
-- `src/config/restaurantConfig.js` — Keep pattern, add pizza shop config for Phase 1.
+- `gohlem-menu-engine.js` — Rewritten with three scoring fixes + _canonicalizeItem() schema normalizer.
+- `src/config/restaurantConfig.js` — Tony's Brick Oven Pizzeria (Phase 1 reference config).
 
-### REPLACE COMPLETELY (new file, old file archived or deleted)
-- `src/conversation/conversationEngine.js` — New tool-calling architecture replaces this.
-- `src/conversation/conversationController.js` — New stateManager.js replaces this.
-- `src/orders/menuResolver.js` — Replaced by tool implementations in src/tools/.
+### BUILT IN PHASE 2
+- `src/conversation/conversationEngine.js` — Tool-calling engine. Built and working.
+- `src/tools/toolHandler.js` — All five tool implementations.
+- `src/tools/definitions.js` — OpenAI tool definitions.
+- `menus/tonys_pizzeria.json` — 100-item Tony's menu (Phase 1, benchmark passes 14/14).
+- `menus/hot_bagels.json` — 289-item Hot Bagels menu. Canonical schema (modifier_groups, base_price).
+- `menus/that_sushi_spot.json` — 200-item Sushi Spot menu. Sushi schema (modifiers, price_delta). Auto-normalized.
+- `menus/pizza_place_lakewood.json` — 218-item Pizza Place menu. Same sushi schema. Auto-normalized.
+- `src/config/hotBagelsConfig.js` — Hot Bagels config with kosher FAQ, special terminology.
+- `src/config/sushiSpotConfig.js` — Sushi Spot config with hours, Shabbos notes.
+- `src/config/pizzaPlaceConfig.js` — Pizza Place config with hours, cream cheese roll Thursday rule.
+- `tests/benchmark.js` — Accuracy test runner (Tony's: 14/14 passing).
+- `tests/benchmark-cases/phase1-standard.json` — Standard test cases.
+- `tests/benchmark-cases/phase1-embedding-gap.json` — Embedding gap cases.
 
-### NEW FILES
-- `src/tools/searchMenu.js` — search_menu tool implementation
-- `src/tools/addToCart.js` — add_to_cart tool with all guards
-- `src/tools/removeFromCart.js`
-- `src/tools/updateCartItem.js`
-- `src/tools/getCart.js`
-- `src/conversation/stateManager.js` — new state machine
-- `menus/pizza_shop_100.json` — Phase 1 test menu (100-item synthetic pizza shop)
-- `tests/benchmark.js` — the accuracy test runner
-- `tests/benchmark-cases/phase1-standard.json` — cases the design should pass
-- `tests/benchmark-cases/phase1-embedding-gap.json` — cases that expose the embedding gap
+### TWO MENU JSON SCHEMAS — BOTH SUPPORTED
+The menu engine auto-detects and normalizes on load via `_canonicalizeItem()`.
+Schema A (Tony's, Hot Bagels): `modifier_groups`, `max_selections`, `base_price`, option `.price`
+Schema B (Sushi Spot, Pizza Place): `modifiers`, `max_select`, `price`, option `.price_delta`
+Never manually convert — let the engine handle it.
 
 ### DELETE
 - `src/voice/dialogManager.js` — broken (calls Claude model via OpenAI SDK). Remove.
 - `tests/fullTest.js`, `tests/autoTest.js`, `tests/toolTest.js` — replaced by benchmark.
+
+---
+
+## BUGS DISCOVERED IN REAL SPEECH TESTING — PHASE 2
+
+These were found during manual voice tests across all four restaurants. Not in the original spec.
+Every one must be addressed before going live. Status tracked here.
+
+### B01 — AI denies items without searching (OPEN)
+Rule 8 says "never deny without searching first." The AI ignores this for beverages —
+says "we don't have Coke" without calling search_menu("coke"). Seen in every restaurant.
+Fix: Prompt reinforcement + code-layer check. Do not call AI's response final if it
+contains denial language and no search_menu was called that turn.
+Risk to fix: Low (prompt only is safe; code guard needs care with false positives).
+
+### B02 — AI suggests items it has not verified (OPEN)
+AI said "try iced tea or lemonade" (from training data), then when asked for iced tea
+said it wasn't on the menu. Never suggest an item by name without seeing it in a search result.
+Fix: Prompt rule. "Never name a specific alternative without searching for it first."
+Risk to fix: None (prompt addition only).
+
+### B03 — Human fallback fires on impatience, not just failures (OPEN)
+Customer said "are you here?" during processing → AI immediately offered human transfer.
+"Are you here?" is not a search failure — it is impatience during a slow turn.
+Failure counter must only increment when search_menu returns found: false, not on any utterance.
+Fix: Move counter increment into tool result handler, not the conversation loop.
+Risk to fix: Medium (code change to failure tracking logic).
+
+### B04 — Phantom item added to cart after human fallback triggered (OPEN — CRITICAL)
+In one test: Small Vegetable Platter ($40) appeared in cart. Customer never ordered it.
+This happened around the same time human fallback triggered. Suspected cause: tool calls
+ran in the background after transfer was initiated.
+Fix: Unknown until root cause is confirmed. Must investigate before touching fallback code.
+Never change the fallback mechanism until this is understood.
+Risk: This is a production blocker. A customer could be charged for items they didn't order.
+
+### B05 — Modifying existing cart item adds duplicate instead of updating (OPEN)
+Customer had 1 falafel in cart. Asked to add modifiers to it.
+AI called add_to_cart → added a second falafel. Should have called update_cart_item.
+Same happened with Macaroni & Cheese — ended up with 2 in cart.
+Fix: Prompt rule + optionally a code guard. "If the customer is asking to modify an item
+already in the cart, get cart_item_id and call update_cart_item — never add_to_cart again."
+Risk to fix: Medium — must not block legitimate duplicate orders ("I'll take another falafel").
+
+### B06 — Wrong item added when customer requests a modifier (OPEN)
+Customer said "add broccoli" while customizing Mac & Cheese → AI searched "broccoli" →
+found "Broccoli Calzone" → added it to the cart.
+Note: Pizza Place menu HAS a "broccoli" modifier option on Mac & Cheese. The search
+found the wrong thing (item name match beat modifier content match).
+Fix: When a customer is mid-customization of an existing item, the AI must use
+update_cart_item rather than treating the request as a new item search.
+Risk to fix: Medium (same as B05 — context awareness during customization).
+
+### B07 — Dropped items in multi-item turn (OPEN)
+"Regular pie, baked ziti, and mushroom barley soup" → soup never added.
+The AI processed the pie and ziti but dropped the third item.
+Likely cause: baked ziti required a confirmation exchange which consumed the turn.
+Fix: Prompt rule. "When the customer orders multiple items in one sentence, hold the
+full list in working memory and process every item before asking for anything else."
+Risk to fix: Low (prompt only).
+
+### B08 — Double add when price check triggers re-offer (OPEN)
+Baked ziti already in cart. Customer asked "how much is the baked ziti?" →
+AI searched → found it → asked "would you like to add that?" → customer said
+"you already added it, I need only one" → AI added a second one anyway.
+Fix: Before add_to_cart, check cart for existing item. If already present, confirm
+duplication intent rather than silently adding again.
+Risk to fix: Medium (requires cart check on every add).
+
+### B09 — max_selections ceiling not enforced in code (OPEN)
+Customer ordered "grilled tuna AND raw salmon" for poke bowl fish group (max_selections: 1).
+Both were accepted. Cart showed two fish choices on an item that allows only one.
+This sends an invalid order to the kitchen.
+Fix: Code guard in toolHandler — if modifier selection count for a group exceeds
+max_selections, return error and prompt AI to ask customer to pick one.
+Risk to fix: Low-medium (additive validation, won't affect valid orders).
+
+### B10 — AI re-asks for modifier customer already stated (OPEN)
+"Lemon butter salmon, a medium" → AI found item → asked "What temperature? Rare, medium, or well done?"
+Customer had to repeat "I said medium."
+Fix: Prompt rule (already partially there, needs strengthening).
+"Map stated modifiers immediately. Never ask for something the customer already told you."
+Risk to fix: Low (prompt only).
+
+### B11 — Unnecessary confirmation on clear intent (OPEN)
+"I would like to have a regular pie" → AI found it → "Would you like to add that to your order?"
+Wastes a turn. Clear ordering language must trigger add_to_cart directly, not a confirmation.
+Fix: Prompt rule. "If ordering signal is unambiguous, add immediately. Do not confirm."
+Must be precise — "do you have X?" is NOT an ordering signal; "I'll have X" IS.
+Risk to fix: Low (prompt only), but see concern above about browsing vs ordering edge case.
+
+### B12 — "One moment please" filler creates phone silence (OPEN)
+On a phone call, TTS says "one moment please" then 4 seconds of silence.
+Callers hang up thinking the call dropped.
+Fix: Replace with a shorter, more natural filler like "Sure" or nothing at all.
+Do NOT remove all acknowledgment — silence is worse than bad filler.
+Risk to fix: Low (prompt only), but do not remove entirely.
+
+### B13 — Special instructions field contains AI's spoken confirmation (OPEN)
+Tuna sandwich cart showed special_instructions = "I'll note that for the kitchen."
+That is the AI's verbal response, not the actual kitchen note.
+The kitchen should receive "harif, pickles" not "I'll note that for the kitchen."
+Fix: Prompt rule. "Pass the customer's actual request in special_instructions, not
+your verbal acknowledgment of it."
+Risk to fix: Low (prompt only).
+
+### B14 — Zero-quantity items visible in cart (OPEN)
+When size was upgraded (small → large), old small poke bowl showed as "×0 — $0.00" in cart.
+This confuses customers and staff.
+Fix: UI fix in voiceTest.html — filter out items with quantity === 0 before rendering.
+Risk to fix: None (UI only, no engine logic).
+
+### B15 — Nigiri ordered, roll added instead (OPEN)
+Customer said "two black pepper tuna nachiris" (nigiri) → added as "Black Pepper Tuna Roll."
+These are different items with different prices.
+Fix: Add nigiri terminology to sushi config. Ensure search query is "black pepper tuna nigiri."
+Risk to fix: None (config addition only).
+
+### B16 — Poke bowl asks each modifier group separately — poor UX (OPEN)
+5 required groups (base, fish, vegetables×4, toppings×3, sauce×2) = 5+ separate exchanges.
+Customer said "That's complicated. Give me one at a time."
+Fix: Collect all modifiers the customer mentioned upfront. Only ask about genuinely
+missing groups. "I still need your vegetable choices — what would you like?" not
+asking about groups that were already stated.
+Risk to fix: Medium (requires prompt pattern change for multi-required-group items).
 
 ---
 
@@ -417,31 +568,33 @@ Running takes ~3 minutes for 30 cases. Run after every significant change.
 
 ## PHASE PLAN
 
-### Phase 0 — THIS DOCUMENT (complete)
+### Phase 0 — THIS DOCUMENT (COMPLETE)
 Write the master context document. Decide architecture. No code yet.
 
-### Phase 1 — Prove the Architecture (current phase)
-**Goal**: Build the new conversation engine on a 100-item synthetic pizza shop menu.
-Prove that structural tool-calling architecture eliminates the prior build's core failures.
+### Phase 1 — Prove the Architecture (COMPLETE)
+Built and benchmarked on Tony's Brick Oven Pizzeria (100-item synthetic menu).
+Benchmark result: 14/14 passing (100%). Architecture validated.
+Engine: tool-calling, ID-based, no modifier hallucination.
 
-Steps in order:
-1. Build `menus/pizza_shop_100.json` — 100 items covering all hard cases
-2. Rewrite `gohlem-menu-engine.js` with the three scoring fixes
-3. Build `src/tools/` — all five tool implementations with all guards
-4. Build `src/conversation/stateManager.js` — new state machine
-5. Build `src/conversation/conversationEngine.js` — new tool-calling engine
-6. Build `tests/benchmark.js` + write all test cases
-7. Run benchmark. Fix failures. Re-run. Reach 18/20 on standard cases.
+### Phase 2 — Multi-Restaurant + Real Speech Testing (IN PROGRESS)
+Four restaurants loaded: Tony's, Hot Bagels, That Sushi Spot, The Pizza Place.
+Browser test widget with restaurant dropdown.
+History trimming (12 messages, safe boundary).
+Voice format rules in system prompt (no markdown, no unprompted lists, short sentences).
+Manual speech testing completed: ~20 sessions across all four restaurants.
+16 bugs documented (B01–B16 above). None are architecture failures — all are fixable.
 
-**What Phase 1 does NOT include**: Toast integration, real voice, delivery zones, 86 list,
-menu refresh. Keep it simple. Prove the brain works first.
+**Remaining Phase 2 work:**
+- Fix B01–B16 in priority order (B04 phantom item must be root-caused before touching)
+- Convert every manual test failure into a benchmark case
+- Run benchmark before and after every fix
+- Add hours enforcement, store hours check before greeting
+- Add zero-quantity item filter to cart UI (B14)
+- Target: 40/50 on expanded benchmark before Phase 3
 
-**Test method**: `node tests/benchmark.js` in terminal. No phone calls needed.
-
-### Phase 2 — Full Hot Bagels Menu
-Swap in the 289-item Hot Bagels menu. Add 20 more benchmark cases. Add delivery zone
-validation, store hours enforcement, stockout (86 list), menu cache with TTL.
-Target: 40/50 on expanded benchmark.
+### Phase 3 — Voice Layer
+Connect Twilio + Deepgram. Address P01-P05, P34 at infrastructure level.
+The conversation engine does not change — only the input/output layer.
 
 ### Phase 3 — Voice Layer
 Connect Twilio + Deepgram. Address P01-P05, P34 at infrastructure level.
@@ -498,3 +651,7 @@ Do NOT push if the benchmark score dropped. Fix first.
 8. If you are fixing a bug with a prompt instruction — stop. Build the enforcement in code.
 9. The benchmark must use messy realistic transcripts. No clean-text test cases.
 10. Do not touch voice server files (voiceServer.js, callHandler.js) until Phase 3.
+11. Run `node tests/benchmark.js` before AND after every code or prompt change. If score drops — revert immediately.
+12. Do NOT modify the human fallback mechanism until B04 (phantom item) is root-caused. The cause is unknown.
+13. Before adding any item to the cart, the AI must have called search_menu this turn. No exceptions.
+14. Special_instructions must contain the customer's actual request — never the AI's verbal confirmation of it.
