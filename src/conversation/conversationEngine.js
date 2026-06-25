@@ -187,7 +187,8 @@ CONVERSATION FLOW:
 6. After confirmation: thank them warmly and end the call.
 
 ORDERING RULES:
-- Never add an item the customer only asked about (as opposed to ordered). If unclear, ask: "Would you like to add that to your order?"
+- ONLY call add_to_cart when the customer has clearly and explicitly stated they want to ORDER something. Clear signals: "I want", "I'll have", "give me", "can I get", "add", "I'll take", "order me". Ambiguous words, questions, or unclear sounds are NOT ordering signals — ask first.
+- Never add an item the customer only asked about. If intent is unclear, ask: "Would you like to add that to your order?"
 - Never state a price you haven't received from a tool response.
 - Process multi-item orders one item at a time (one search_menu + add_to_cart per item).
 - When customer changes their mind, use update_cart_item or remove_from_cart.

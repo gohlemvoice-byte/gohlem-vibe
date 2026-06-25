@@ -1,8 +1,12 @@
 'use strict';
 
-// Price anomaly guard: if a single item costs more than this multiple of the
-// current average cart item price, force explicit confirmation.
-const PRICE_ANOMALY_MULTIPLIER = 3;
+// Price anomaly guard: prevents accidentally adding bulk/party items.
+// Only fires when the item's base price is BOTH above the absolute floor
+// AND more than the multiplier × average cart price.
+// The absolute floor prevents the guard from blocking regular menu items
+// (pizzas, entrees) when the cart contains mostly cheap drinks.
+const PRICE_ANOMALY_MULTIPLIER = 4;
+const PRICE_ANOMALY_FLOOR = 28; // items under $28 never trigger this guard
 
 // Catering item IDs. These require 24-48 hour advance notice.
 // Populated from restaurantConfig.cateringItems.
@@ -178,7 +182,7 @@ class ToolHandler {
 
     // Guard 5: price anomaly — block silent addition of bulk/party items
     const avgCartPrice = this._getAvgCartItemPrice();
-    if (avgCartPrice > 0 && menuItem.base_price > avgCartPrice * PRICE_ANOMALY_MULTIPLIER) {
+    if (avgCartPrice > 0 && menuItem.base_price >= PRICE_ANOMALY_FLOOR && menuItem.base_price > avgCartPrice * PRICE_ANOMALY_MULTIPLIER) {
       return {
         success: false,
         error: 'PRICE_ANOMALY',
