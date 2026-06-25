@@ -1,0 +1,97 @@
+{
+  "suite": "Phase 1 Embedding Gap",
+  "description": "Tests that expose what the system CANNOT do without embeddings. These are expected to fail or return empty/wrong results in Phase 1. Run them to measure the gap, not to pass them.",
+  "version": "Alpha",
+  "cases": [
+    {
+      "id": "E01",
+      "category": "semantic_category",
+      "description": "Abstract descriptor — 'something cold to drink'",
+      "input": "something cold to drink",
+      "expected_with_embeddings": "Returns Fountain Soda, Bottled Water, Snapple, Arizona Iced Tea",
+      "current_behavior": "Search likely returns no results or wrong items — 'cold' is not in any item name",
+      "passes_without_embeddings": false
+    },
+    {
+      "id": "E02",
+      "category": "semantic_category",
+      "description": "Dietary preference — 'something vegetarian'",
+      "input": "something vegetarian",
+      "expected_with_embeddings": "Returns Veggie Lovers Pizza, Margherita, Eggplant Parm, Garden Salad, etc.",
+      "current_behavior": "Search returns no results — 'vegetarian' is not in any item name",
+      "passes_without_embeddings": false
+    },
+    {
+      "id": "E03",
+      "category": "semantic_concept",
+      "description": "Mood/experience concept — 'something spicy'",
+      "input": "something spicy",
+      "expected_with_embeddings": "Returns items with Buffalo, Jalapeno Poppers, items with hot cherry peppers modifier",
+      "current_behavior": "Search returns no direct results — 'spicy' is not in item names (though 'jalapeno poppers' exists)",
+      "passes_without_embeddings": "partial — Jalapeno Poppers might match via modifier content search"
+    },
+    {
+      "id": "E04",
+      "category": "semantic_concept",
+      "description": "Light meal — 'something light'",
+      "input": "something light",
+      "expected_with_embeddings": "Returns salads, slices",
+      "current_behavior": "No results — 'light' is not in item names",
+      "passes_without_embeddings": false
+    },
+    {
+      "id": "E05",
+      "category": "semantic_concept",
+      "description": "Sharing context — 'something for the table'",
+      "input": "something for the table to share",
+      "expected_with_embeddings": "Returns Garlic Knots, Mozzarella Sticks, large pizzas, Bruschetta",
+      "current_behavior": "No results",
+      "passes_without_embeddings": false
+    },
+    {
+      "id": "E06",
+      "category": "semantic_concept",
+      "description": "Comfort food — 'something hearty'",
+      "input": "something hearty",
+      "expected_with_embeddings": "Returns Baked Ziti, Lasagna, Spaghetti and Meatballs, large pizzas",
+      "current_behavior": "No results",
+      "passes_without_embeddings": false
+    },
+    {
+      "id": "E07",
+      "category": "abstract_concept",
+      "description": "Customer wants a recommendation — 'what's your best pizza'",
+      "input": "what's your best pizza",
+      "expected_with_embeddings": "Returns top pizza items, AI picks a recommendation",
+      "current_behavior": "Search for 'best pizza' might return nothing useful — 'best' is a stop word",
+      "passes_without_embeddings": "partial — might return all pizzas, AI picks arbitrarily"
+    },
+    {
+      "id": "E08",
+      "category": "dietary_restriction",
+      "description": "Customer describes diet — 'I don't eat meat'",
+      "input": "I don't eat meat, what can I get?",
+      "expected_with_embeddings": "Returns vegetarian items: Veggie Lovers Pizza, Margherita, Garden Salad, Eggplant Parm Hero, etc.",
+      "current_behavior": "Negative dietary constraint query — no meaningful results",
+      "passes_without_embeddings": false
+    },
+    {
+      "id": "E09",
+      "category": "texture_based",
+      "description": "Customer describes texture/experience — 'something crispy'",
+      "input": "something crispy",
+      "expected_with_embeddings": "Returns Fried Calamari, French Fries, Onion Rings, Mozzarella Sticks",
+      "current_behavior": "No results — 'crispy' not in item names",
+      "passes_without_embeddings": false
+    },
+    {
+      "id": "E10",
+      "category": "semantic_synonym",
+      "description": "Synonym not in alias list — 'club sandwich'",
+      "input": "club sandwich",
+      "expected_with_embeddings": "Returns Turkey Club Hero (it IS a club sandwich)",
+      "current_behavior": "No match — 'club sandwich' doesn't tokenize to match 'Turkey Club Hero'... actually 'club' token DOES appear in 'Turkey Club Hero'. This might pass.",
+      "passes_without_embeddings": "likely yes — token 'club' matches 'Turkey Club Hero'"
+    }
+  ]
+}

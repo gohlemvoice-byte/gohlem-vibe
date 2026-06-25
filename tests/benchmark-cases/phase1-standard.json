@@ -1,0 +1,222 @@
+{
+  "suite": "Phase 1 Standard",
+  "description": "Tests the system should pass with the new tool-calling architecture. Uses realistic but not garbled speech.",
+  "version": "Alpha",
+  "cases": [
+    {
+      "id": "S01",
+      "category": "basic_ordering",
+      "description": "Single item, no modifiers required",
+      "inputs": ["pickup", "I want two cheese slices please"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Cheese Slice", "quantity": 2 }]
+      }
+    },
+    {
+      "id": "S02",
+      "category": "required_modifiers",
+      "description": "Pizza requires size and crust — AI should collect both before adding",
+      "inputs": ["pickup", "I want a large pepperoni pizza", "thin crust"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Pepperoni Pizza", "quantity": 1, "modifier_names": ["Large 16 inch", "Thin Crust"] }]
+      }
+    },
+    {
+      "id": "S03",
+      "category": "multi_item",
+      "description": "Two different items in one turn",
+      "inputs": ["pickup", "I want a large cheese pizza hand tossed and a caesar salad"],
+      "expected_cart": {
+        "item_count": 2,
+        "items": [
+          { "name": "Cheese Pizza", "quantity": 1 },
+          { "name": "Caesar Salad", "quantity": 1 }
+        ]
+      }
+    },
+    {
+      "id": "S04",
+      "category": "wings_with_modifiers",
+      "description": "Wings with count, style, and sauce — 4 required modifier groups",
+      "inputs": ["pickup", "I want twelve boneless wings with medium buffalo sauce", "ranch dressing"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Chicken Wings", "quantity": 1 }]
+      }
+    },
+    {
+      "id": "S05",
+      "category": "alias_mapping",
+      "description": "Customer says 'pie' — should find Pizza items",
+      "inputs": ["pickup", "I want a large pepperoni pie please", "hand tossed"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Pepperoni Pizza", "quantity": 1 }]
+      }
+    },
+    {
+      "id": "S06",
+      "category": "alias_mapping",
+      "description": "Customer says 'sub' or 'hero' — should find Hero items",
+      "inputs": ["pickup", "give me a chicken parm sub", "regular"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Chicken Parm Hero", "quantity": 1 }]
+      }
+    },
+    {
+      "id": "S07",
+      "category": "mid_order_correction",
+      "description": "Customer changes their mind on size",
+      "inputs": ["pickup", "I want a small cheese pizza hand tossed", "actually make that a large"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Cheese Pizza", "quantity": 1, "modifier_names": ["Large 16 inch"] }]
+      }
+    },
+    {
+      "id": "S08",
+      "category": "removal",
+      "description": "Customer removes an item",
+      "inputs": ["pickup", "I want a calzone and garlic knots", "actually remove the garlic knots"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Calzone", "quantity": 1 }]
+      }
+    },
+    {
+      "id": "S09",
+      "category": "quantity",
+      "description": "Quantity specified, same item",
+      "inputs": ["pickup", "I want three mozzarella sticks"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Mozzarella Sticks", "quantity": 3 }]
+      }
+    },
+    {
+      "id": "S10",
+      "category": "disambiguation",
+      "description": "Ambiguous 'margherita' — AI must clarify before adding",
+      "inputs": ["pickup", "I want a margherita large hand tossed"],
+      "expected_behavior": "AI asks: Margherita Pizza or Margherita Sicilian?",
+      "expected_cart": {
+        "item_count": 0,
+        "note": "Cart stays empty until customer disambiguates"
+      }
+    },
+    {
+      "id": "S11",
+      "category": "disambiguation",
+      "description": "Cheesecake disambiguation",
+      "inputs": ["pickup", "I want a slice of cheesecake"],
+      "expected_behavior": "AI asks: New York Cheesecake or Italian Cheesecake?",
+      "expected_cart": {
+        "item_count": 0,
+        "note": "Cart stays empty until customer picks which one"
+      }
+    },
+    {
+      "id": "S12",
+      "category": "exact_match_priority",
+      "description": "Hot coffee should match Hot Coffee ($2.49) not Hot Coffee Box-equivalent",
+      "inputs": ["pickup", "just a hot coffee"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Hot Coffee", "quantity": 1, "price_max": 5.00 }]
+      }
+    },
+    {
+      "id": "S13",
+      "category": "catering_restriction",
+      "description": "Catering item requires advance notice — AI must warn before adding",
+      "inputs": ["pickup", "I want a party pizza tray"],
+      "expected_behavior": "AI informs customer that catering items require 24-48 hour advance notice",
+      "expected_cart": {
+        "item_count": 0,
+        "note": "Cart stays empty because catering requires advance notice"
+      }
+    },
+    {
+      "id": "S14",
+      "category": "delivery",
+      "description": "Delivery order — AI must capture address",
+      "inputs": ["delivery", "I want two cheese slices"],
+      "expected_behavior": "AI asks for delivery address before or after taking order",
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Cheese Slice", "quantity": 2 }]
+      }
+    },
+    {
+      "id": "S15",
+      "category": "price_question",
+      "description": "Customer asks price — AI answers without adding to cart",
+      "inputs": ["pickup", "how much is a large pepperoni pizza?"],
+      "expected_behavior": "AI states the price and asks if customer wants to order it",
+      "expected_cart": {
+        "item_count": 0,
+        "note": "No item added — customer only asked price"
+      }
+    },
+    {
+      "id": "S16",
+      "category": "modifier_category",
+      "description": "Customer asks about 'vegetables' — AI lists available vegetable toppings for a pizza",
+      "inputs": ["pickup", "I want a large cheese pizza hand tossed with some vegetables"],
+      "expected_behavior": "AI lists the vegetable topping options from the pizza's modifier group",
+      "expected_cart": {
+        "item_count": 0,
+        "note": "Cart stays empty until customer specifies which vegetables"
+      }
+    },
+    {
+      "id": "S17",
+      "category": "split_half",
+      "description": "Half-and-half pizza topping",
+      "inputs": ["pickup", "I want a large cheese pizza hand tossed, put pepperoni on the left half"],
+      "expected_cart": {
+        "item_count": 1,
+        "items": [{ "name": "Cheese Pizza", "modifier_names": ["Large 16 inch", "Hand Tossed", "Pepperoni", "Left Half"] }]
+      }
+    },
+    {
+      "id": "S18",
+      "category": "long_order",
+      "description": "Five-item order — all items should be in cart",
+      "inputs": [
+        "pickup",
+        "I want a large pepperoni pizza thin crust, twelve bone-in wings with hot buffalo and bleu cheese, a caesar salad, mozzarella sticks, and two fountain sodas"
+      ],
+      "expected_cart": {
+        "item_count": 5,
+        "note": "2 Fountain Sodas should be quantity 2 on one cart item, or two separate items — both acceptable"
+      }
+    },
+    {
+      "id": "S19",
+      "category": "post_confirmation",
+      "description": "Customer adds item after confirming done",
+      "inputs": ["pickup", "I want a cheese slice", "that's it", "wait, also a coke"],
+      "expected_cart": {
+        "item_count": 2,
+        "items": [
+          { "name": "Cheese Slice", "quantity": 1 },
+          { "name": "Fountain Soda", "quantity": 1 }
+        ]
+      }
+    },
+    {
+      "id": "S20",
+      "category": "faq",
+      "description": "Customer asks about gluten free",
+      "inputs": ["pickup", "do you have gluten free options?"],
+      "expected_behavior": "AI confirms gluten free crust is available (+$4.00) and gluten free pasta/rolls are available",
+      "expected_cart": {
+        "item_count": 0
+      }
+    }
+  ]
+}

@@ -11,7 +11,6 @@ const { createClient, LiveTranscriptionEvents } = require('@deepgram/sdk');
 const ConversationEngine = require('../conversation/conversationEngine');
 const restaurantConfig = require('../config/restaurantConfig');
 
-const MENU_PATH = path.join(__dirname, '../../hot_bagels_menu_with_real_acai_restaurant.json');
 const PORT = process.env.PORT || 3000;
 const DG_KEY = process.env.DEEPGRAM_API_KEY;
 
@@ -113,7 +112,7 @@ app.post('/voice/test/open', express.json(), async (req, res) => {
   const sessionId = req.body?.sessionId;
   if (!sessionId) return res.status(400).json({ error: 'sessionId required' });
 
-  const session = { engine: new ConversationEngine(MENU_PATH), lastActivity: Date.now() };
+  const session = { engine: new ConversationEngine(restaurantConfig), lastActivity: Date.now() };
   browserSessions.set(sessionId, session);
 
   try {
@@ -213,7 +212,7 @@ wss.on('connection', (twilioWs) => {
           callSid,
           streamSid,
           ws: twilioWs,
-          engine: new ConversationEngine(MENU_PATH),
+          engine: new ConversationEngine(restaurantConfig),
           dgConn: null,
           dgReady: false,
           state: 'init', // init | greeting | speaking | listening | processing | done

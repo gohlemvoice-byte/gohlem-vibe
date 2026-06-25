@@ -1,24 +1,22 @@
-const router = require('express').Router();
-const menu = require('../../menu');
+'use strict';
 
-router.get('/', async (req, res) => {
+const router = require('express').Router();
+const fs = require('fs');
+const restaurantConfig = require('../../config/restaurantConfig');
+
+// Returns the current menu from the local JSON file.
+// In Phase 3 this will be replaced by a live Toast API pull.
+router.get('/', (_req, res) => {
   try {
-    const { restaurantGuid = process.env.TOAST_RESTAURANT_GUID } = req.query;
-    const data = await menu.getMenu(restaurantGuid);
-    res.json(data || { message: 'No menu cached. Trigger a sync first.' });
+    const data = JSON.parse(fs.readFileSync(restaurantConfig.menuFile, 'utf8'));
+    res.json({ source: 'local', itemCount: data.items.length, menu: data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.post('/sync', async (req, res) => {
-  try {
-    const { restaurantGuid = process.env.TOAST_RESTAURANT_GUID } = req.body;
-    const data = await menu.syncMenu(restaurantGuid);
-    res.json({ ok: true, itemCount: data.length });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+router.post('/sync', (_req, res) => {
+  res.json({ ok: false, message: 'Toast menu sync not yet implemented (Phase 3).' });
 });
 
 module.exports = router;
