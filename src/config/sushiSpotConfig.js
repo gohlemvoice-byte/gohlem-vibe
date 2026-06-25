@@ -21,14 +21,19 @@ module.exports = {
   specialTerminology: `
     kani = imitation crab
     crab = kani (imitation crab, not real crab)
-    nigiri = single piece of fish over rice
-    sashimi = fish over cucumber, no rice
+    nigiri = nigiri (fish over rice, priced per piece — NOT a roll)
+    najiri = nigiri
+    nachiris = nigiri
+    nachiri = nigiri
+    sashimi = sashimi (fish only, no rice — NOT a roll)
     maki = sushi roll
     roll = sushi roll
     spicy = spicy version (e.g. spicy salmon roll, spicy tuna roll)
     hand roll = sushi burrito
     poke = poke bowl
-    edamame = boiled soy beans
+    pokeball = poke bowl
+    edamame = edamame
+    adamame = edamame
   `,
 
   faqKnowledgeBase: `
