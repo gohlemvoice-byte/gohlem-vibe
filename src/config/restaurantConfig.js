@@ -11,7 +11,7 @@ module.exports = {
     orderTypes: ['pickup', 'delivery'],
     deliveryMinimum: 15.00,
     deliveryRadiusMiles: 5,
-    version: 'Alpha',
+    version: 'Bravo',
   },
 
   menuFile: path.join(__dirname, '../../menus/tonys_pizzeria.json'),
