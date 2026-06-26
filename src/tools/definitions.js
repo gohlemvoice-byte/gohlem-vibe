@@ -31,9 +31,7 @@ const TOOL_DEFINITIONS = [
       description:
         'Add an item to the order. item_id and all modifier_option_ids ' +
         'MUST come from this turn\'s search_menu response — never invent them. ' +
-        'Returns MISSING_REQUIRED if required modifier groups are not filled. ' +
-        'Returns EXCEEDS_MAX_SELECTIONS if too many options chosen for a group. ' +
-        'Returns ALREADY_IN_CART if item is already in the order — set confirm_duplicate: true only if the customer explicitly said they want another one.',
+        'Will return an error if required modifier groups are missing.',
       parameters: {
         type: 'object',
         properties: {
@@ -54,11 +52,6 @@ const TOOL_DEFINITIONS = [
           special_instructions: {
             type: 'string',
             description: 'Free-text preparation notes (e.g. "well done", "light sauce").',
-          },
-          confirm_duplicate: {
-            type: 'boolean',
-            description: 'Set to true ONLY after the customer explicitly confirmed they want another of this item. Never set true speculatively.',
-            default: false,
           },
         },
         required: ['item_id'],

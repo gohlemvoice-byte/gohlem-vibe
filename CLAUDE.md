@@ -444,14 +444,15 @@ Likely cause: baked ziti required a confirmation exchange which consumed the tur
 Fix applied: Updated MULTI-ITEM ORDERS rule in conversationEngine.js system prompt.
 "Note ALL items, process each in sequence, do not drop items because one required clarification."
 
-### B08 — Double add when price check triggers re-offer (FIXED — code)
+### B08 — Double add when price check triggers re-offer (OPEN — Guard 6 reverted)
 Baked ziti already in cart. Customer asked "how much is the baked ziti?" →
 AI searched → found it → asked "would you like to add that?" → customer said
 "you already added it, I need only one" → AI added a second one anyway.
-Fix applied: Guard 6 in toolHandler._addToCart — if item is already in cart,
-returns ALREADY_IN_CART error with prompt to confirm with customer. AI must set
-confirm_duplicate: true (new add_to_cart parameter) only after explicit customer confirmation.
-Verified: C008 conversation benchmark passing (edamame price query stays at qty 1).
+Guard 6 (ALREADY_IN_CART) was implemented then reverted — it broke the poke bowl
+multi-modifier flow. Root cause: poke bowl adds on the first add_to_cart call, then
+the AI called add_to_cart again with optional modifiers → Guard 6 blocked it and
+presented "you already have one" confusion to the customer. Must be re-approached
+without breaking multi-modifier collection flows.
 
 ### B09 — max_selections ceiling not enforced in code (FIXED — code)
 Customer ordered "grilled tuna AND raw salmon" for poke bowl fish group (max_selections: 1).

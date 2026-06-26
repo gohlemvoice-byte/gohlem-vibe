@@ -128,7 +128,7 @@ class ToolHandler {
 
   // ─── add_to_cart ────────────────────────────────────────────────────────────
 
-  _addToCart({ item_id, modifier_option_ids = [], quantity = 1, special_instructions = '', confirm_duplicate = false }) {
+  _addToCart({ item_id, modifier_option_ids = [], quantity = 1, special_instructions = '' }) {
 
     // Guard 1: item must come from the most recent search_menu call
     if (!this.validItemIds.has(item_id)) {
@@ -225,20 +225,6 @@ class ToolHandler {
         message: `${menuItem.name} costs $${menuItem.base_price.toFixed(2)}, which is significantly higher than your average cart item ($${avgCartPrice.toFixed(2)}).`,
         prompt: `Confirm with the customer: "Just to confirm, you'd like to add ${menuItem.name} at $${menuItem.base_price.toFixed(2)}?"`,
       };
-    }
-
-    // Guard 6: duplicate detection — warn AI when item already in cart (B08)
-    if (!confirm_duplicate) {
-      const existing = this.cart.getActiveItems().find(i => i.menuItemId === item_id);
-      if (existing) {
-        return {
-          success: false,
-          error: 'ALREADY_IN_CART',
-          message: `${menuItem.name} is already in the cart (qty: ${existing.quantity}, cart_item_id: ${existing.cartItemId}). The customer may have been asking about it, not ordering it again.`,
-          existing_cart_item_id: existing.cartItemId,
-          prompt: `Ask the customer: "You already have ${menuItem.name} in your order — did you want to add another one?" If yes, call add_to_cart again with confirm_duplicate: true.`,
-        };
-      }
     }
 
     // Build modifier objects for the cart
