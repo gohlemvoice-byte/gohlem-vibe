@@ -48,7 +48,7 @@ module.exports = {
   `,
 
   storeSpecificInstructions: `
-    RICE CHOICE: All sushi rolls require a rice choice (white or brown). If customer does not specify, ask: "White rice or brown rice?"
+    RICE CHOICE: Many rolls have a Rice Choice modifier (white or brown rice). Only ask about rice if the search_menu result for that item actually includes a Rice Choice modifier group. If the item has no rice modifier option, do not ask — add it as-is. Never substitute a lower-ranked search result just because it has a rice modifier and the top result does not.
 
     PARTY PLATTERS: When customer asks about platters for a group, ask how many people and present the size options.
 
