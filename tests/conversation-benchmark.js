@@ -251,6 +251,400 @@ Once the sandwich is added, say "that's all."`,
     max_turns: 12,
   },
 
+  // ── GROUP 8: BN2 — partial special instructions with quantity ────────────
+
+  {
+    id: 'S006', restaurant: 'pizza',
+    description: 'BN2: 3 pies + fries, cut only 2 pies into 16 slices — all must land',
+    scenario: `You are calling The Pizza Place for pickup. Order three regular pies and one french fries.
+Mention that you want two of the pies cut into 16 slices — the third pie is normal.
+Answer any clarifying questions. Once all items are confirmed, say "that's all."`,
+    expected_cart: [
+      { item_name_contains: 'French Fries', quantity: 1 },
+    ],
+    must_not_contain: [],
+    min_cart_quantity: 4,
+    max_turns: 14,
+  },
+
+  // ── GROUP 9: B01 — search before denying drinks ──────────────────────────
+
+  {
+    id: 'S007', restaurant: 'sushi',
+    description: 'B01: ask for Coke, get graceful answer, then order soda can',
+    scenario: `You are calling That Sushi Spot for pickup.
+First ask: "Do you have Coke?"
+If they say no or don't have it, ask "what drinks do you have?"
+Then order a soda can.
+Once the soda is added, say "that's it."`,
+    expected_cart: [{ item_name_contains: 'Soda', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 8,
+  },
+
+  // ── GROUP 10: B08 — price query must not re-add ──────────────────────────
+
+  {
+    id: 'S008', restaurant: 'hotbagels',
+    description: 'B08: order hot coffee, then ask the price — must stay at exactly 1',
+    scenario: `You are calling Hot Bagels for pickup.
+Order a hot coffee.
+After the agent confirms it, ask "by the way, how much is the hot coffee?"
+Do NOT say you want to add another one. Just say "oh ok thanks" when they tell you the price.
+Then say "that's all."`,
+    expected_cart: [{ item_name_contains: 'Coffee', quantity: 1 }],
+    must_not_contain: [],
+    max_cart_quantity: 1,
+    max_turns: 8,
+  },
+
+  // ── GROUP 11: B06 — wrong item added during customization ────────────────
+
+  {
+    id: 'S009', restaurant: 'pizza',
+    description: 'B06: order Mac & Cheese, ask to add broccoli — must NOT get Broccoli Calzone',
+    scenario: `You are calling The Pizza Place for pickup.
+Order a macaroni and cheese.
+After it is added, say "can you add some broccoli to that?"
+If they say broccoli is not available on the mac and cheese, say "ok no problem, that's all."
+If they add a Broccoli Calzone by mistake, say "no I wanted broccoli ON the mac and cheese, not a separate calzone."`,
+    expected_cart: [{ item_name_contains: 'Macaroni', quantity: 1 }],
+    must_not_contain: ['Broccoli Calzone', 'Calzone'],
+    max_turns: 10,
+  },
+
+  // ── GROUP 12: B13+B05 — special instructions in retry, no duplicate ──────
+
+  {
+    id: 'S010', restaurant: 'hotbagels',
+    description: 'B13+B05: tuna with harif + bagel type stated together — one item only',
+    scenario: `You are calling Hot Bagels for pickup.
+Order a tuna sandwich. In the same sentence, say you want it on an everything bagel and you want it harif (spicy).
+If they ask for the bagel type again, say "I said everything bagel."
+If they ask about spicy again, say "yes harif."
+Once the sandwich is added, say "that's it, thanks."`,
+    expected_cart: [{ item_name_contains: 'Tuna', quantity: 1, special_instructions_contains: 'harif' }],
+    must_not_contain: [],
+    max_cart_quantity: 1,
+    max_turns: 10,
+  },
+
+  // ── GROUP 13: BN1 regression — no mid-conversation reset ─────────────────
+
+  {
+    id: 'S011', restaurant: 'pizza',
+    description: 'BN1 regression: long multi-turn order — no mid-conversation reset',
+    scenario: `You are calling The Pizza Place for pickup.
+Order these four items ONE AT A TIME across separate turns — do not order them all at once:
+1. First say you want french fries.
+2. After that is confirmed, say you want a baked ziti.
+3. After that is confirmed, say you want a mushroom barley soup.
+4. After that is confirmed, say you want a vegetable soup.
+If at any point the agent asks "is this for pickup or delivery?" as if starting over, say "I already said pickup" and continue.
+Once all four are in, say "that's everything."`,
+    expected_cart: [
+      { item_name_contains: 'French Fries',    quantity: 1 },
+      { item_name_contains: 'Baked Ziti',      quantity: 1 },
+      { item_name_contains: 'Mushroom Barley', quantity: 1 },
+      { item_name_contains: 'Vegetable Soup',  quantity: 1 },
+    ],
+    must_not_contain: [],
+    min_cart_quantity: 4,
+    max_turns: 16,
+  },
+
+  // ── GROUP 14: B16 — poke bowl upfront ────────────────────────────────────
+
+  {
+    id: 'S012', restaurant: 'sushi',
+    description: 'B16: poke bowl — all preferences stated upfront, minimal back-and-forth',
+    scenario: `You are calling That Sushi Spot for pickup.
+In your first order message, say everything at once:
+"I want a large poke bowl with brown rice, raw salmon, avocado and cucumber, crunch, and soy sauce."
+Answer any follow-up questions briefly but do not repeat what you already said.
+Once the poke bowl is added, say "that's all."`,
+    expected_cart: [{ item_name_contains: 'Poke Bowl', quantity: 1, modifier_contains: 'Salmon' }],
+    must_not_contain: [],
+    max_turns: 12,
+  },
+
+  // ── GROUP 15: B10 regression — required modifiers stated upfront ──────────
+
+  {
+    id: 'S013', restaurant: 'tonys',
+    description: 'B10 regression: wings with all 3 required groups stated upfront — no re-asking',
+    scenario: `You are calling Tony's for pickup.
+Order "6 boneless wings with hot buffalo sauce."
+You have stated everything — count, style, and sauce.
+If the agent asks for count, style, or sauce again despite you already stating them, give the same answer.
+Once the wings are added, say "that's all."`,
+    expected_cart: [{ item_name_contains: 'Wing', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 8,
+  },
+
+  // ── GROUP 16: Alias — lox ────────────────────────────────────────────────
+
+  {
+    id: 'S014', restaurant: 'hotbagels',
+    description: 'Alias: customer asks for lox — AI must search, not deny',
+    scenario: `You are calling Hot Bagels for pickup.
+First ask "do you have lox?"
+If they say yes or describe a lox item, order it on an everything bagel.
+If they seem confused, say "you know, smoked salmon."
+Once the item is added, say "perfect, that's all."`,
+    expected_cart: [{ item_name_contains: 'Lox', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 10,
+  },
+
+  // ── GROUP 17: B15 regression — nigiri not rolls ──────────────────────────
+
+  {
+    id: 'S015', restaurant: 'sushi',
+    description: 'B15 regression: nigiri order — must get nigiri not rolls',
+    scenario: `You are calling That Sushi Spot for pickup.
+Order two salmon nigiri and one tuna nigiri.
+If the agent adds rolls instead of nigiri, correct them: "No, I said nigiri not a roll."
+Once you have the nigiri, say "that's it."`,
+    expected_cart: [
+      { item_name_contains: 'Salmon Nigiri' },
+      { item_name_contains: 'Tuna Nigiri',   quantity: 1 },
+    ],
+    must_not_contain: ['Roll'],
+    max_turns: 10,
+  },
+
+  // ── GROUP 18: Price anomaly — individual vs catering ─────────────────────
+
+  {
+    id: 'S016', restaurant: 'pizza',
+    description: 'Price anomaly: "baked ziti" must get $14 individual, not $55 catering pan',
+    scenario: `You are calling The Pizza Place for pickup.
+Order a baked ziti.
+You want the regular individual portion, not a catering pan.
+Once it is added, say "that's all."`,
+    expected_cart: [{ item_name_contains: 'Baked Ziti', quantity: 1 }],
+    must_not_contain: ['9x13'],
+    max_turns: 6,
+  },
+
+  // ── GROUP 19: Positional removal ─────────────────────────────────────────
+
+  {
+    id: 'S017', restaurant: 'tonys',
+    description: 'Positional removal: order garlic knots then remove them',
+    scenario: `You are calling Tony's for pickup.
+Order garlic knots.
+After they are added, say "actually, never mind, remove the garlic knots."
+Once removed, say "yeah that's all, nothing."`,
+    expected_cart: [],
+    must_not_contain: ['Garlic'],
+    max_cart_quantity: 0,
+    max_turns: 8,
+  },
+
+  // ── GROUP 20: Post-confirmation add ──────────────────────────────────────
+
+  {
+    id: 'S018', restaurant: 'tonys',
+    description: 'Post-confirmation: confirm order then add one more item',
+    scenario: `You are calling Tony's for pickup.
+Order garlic knots. When asked if that is everything, say "yes that's it."
+After the agent confirms and gives you the total, say "oh wait, can I also add mozzarella sticks?"
+Once mozzarella sticks are added, say "yes that's everything now."`,
+    expected_cart: [
+      { item_name_contains: 'Garlic Knots',  quantity: 1 },
+      { item_name_contains: 'Mozzarella',    quantity: 1 },
+    ],
+    must_not_contain: [],
+    min_cart_quantity: 2,
+    max_turns: 12,
+  },
+
+  // ── GROUP 21: Modifier content search ────────────────────────────────────
+
+  {
+    id: 'S019', restaurant: 'hotbagels',
+    description: 'Modifier content search: "what vegetables?" then order with them',
+    scenario: `You are calling Hot Bagels for pickup.
+Ask "what vegetables can I get on a sandwich?"
+After the agent tells you, order a tuna sandwich on a sesame bagel with tomatoes and pickles.
+Answer any questions. Once added, say "that's everything."`,
+    expected_cart: [{ item_name_contains: 'Tuna', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 12,
+  },
+
+  // ── GROUP 22: Two poke bowls different modifiers ──────────────────────────
+
+  {
+    id: 'S020', restaurant: 'sushi',
+    description: 'Two poke bowls with different fish — must be two separate items',
+    scenario: `You are calling That Sushi Spot for pickup.
+Order a small poke bowl with brown rice and salmon.
+For vegetables, toppings, and sauce — say "whatever you recommend" or "you choose."
+After that is added, order a second small poke bowl with white rice and tuna.
+For vegetables, toppings, and sauce on the second bowl — say "same as the first."
+Once both are added, say "that's all."`,
+    expected_cart: [
+      { item_name_contains: 'Poke Bowl', quantity: 1 },
+    ],
+    must_not_contain: [],
+    min_cart_quantity: 2,
+    max_turns: 20,
+  },
+
+  // ── GROUP 23: Impatience — no fallback triggered ──────────────────────────
+
+  {
+    id: 'S021', restaurant: 'pizza',
+    description: 'B03: "are you there?" mid-order must not trigger human transfer',
+    scenario: `You are calling The Pizza Place for pickup.
+Order french fries.
+After a moment, say "hello? are you still there?" as if the call went quiet.
+Do not ask for a human or transfer.
+Once the french fries are confirmed, say "ok great, that's all."`,
+    expected_cart: [{ item_name_contains: 'French Fries', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 8,
+  },
+
+  // ── GROUP 24: Three items clean — Tony's ──────────────────────────────────
+
+  {
+    id: 'S022', restaurant: 'tonys',
+    description: 'Three items one breath: large thin crust pepperoni + garlic knots + mozz sticks',
+    scenario: `You are calling Tony's for pickup.
+In your first order message say all three at once:
+"I want a large pepperoni pizza thin crust, garlic knots, and mozzarella sticks."
+Answer any questions. Once all three are confirmed, say "that's everything."`,
+    expected_cart: [
+      { item_name_contains: 'Pepperoni', quantity: 1 },
+      { item_name_contains: 'Garlic',    quantity: 1 },
+      { item_name_contains: 'Mozzarella', quantity: 1 },
+    ],
+    must_not_contain: [],
+    min_cart_quantity: 3,
+    max_turns: 12,
+  },
+
+  // ── GROUP 25: Delivery address captured ──────────────────────────────────
+
+  {
+    id: 'S023', restaurant: 'hotbagels',
+    description: 'Delivery: address captured before finalizing order',
+    scenario: `You are calling Hot Bagels and you want delivery to 123 Oak Street, Lakewood NJ.
+When asked pickup or delivery, say delivery.
+Give your address when asked.
+Then order a tuna sandwich on a plain bagel.
+Answer modifier questions. Once added, say "that's everything."`,
+    expected_cart: [{ item_name_contains: 'Tuna', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 14,
+  },
+
+  // ── GROUP 26: Out of stock item ───────────────────────────────────────────
+
+  {
+    id: 'S024', restaurant: 'pizza',
+    description: 'Out of stock: Sicilian pie unavailable — customer accepts regular pie',
+    scenario: `You are calling The Pizza Place for pickup.
+Order a Sicilian pie.
+If they say it is unavailable or out of stock, say "ok, then give me a regular pie instead."
+Once the regular pie is added, say "that's all."`,
+    expected_cart: [{ item_name_contains: 'Regular', quantity: 1 }],
+    must_not_contain: ['Sicilian'],
+    max_turns: 8,
+  },
+
+  // ── GROUP 27: Half-and-half pizza ────────────────────────────────────────
+
+  {
+    id: 'S025', restaurant: 'tonys',
+    description: 'Half-and-half: large hand tossed half pepperoni half mushrooms',
+    scenario: `You are calling Tony's for pickup.
+Order a large hand tossed pizza with half pepperoni and half mushrooms.
+Answer any clarifying questions about size or crust if needed.
+Once added, say "that's all."`,
+    expected_cart: [{ item_name_contains: 'Pizza', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 10,
+  },
+
+  // ── GROUP 28: Vegetarian request ─────────────────────────────────────────
+
+  {
+    id: 'S026', restaurant: 'hotbagels',
+    description: 'Open-ended: "something vegetarian" — AI must search not invent',
+    scenario: `You are calling Hot Bagels for pickup.
+Say "I want something vegetarian, what do you have?"
+After the agent suggests something or asks what you are in the mood for, say "an avocado sandwich sounds good."
+Order it on an everything bagel.
+Once added, say "that's it."`,
+    expected_cart: [{ item_name_contains: 'Avocado', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 10,
+  },
+
+  // ── GROUP 29: B17 simulator version ──────────────────────────────────────
+
+  {
+    id: 'S027', restaurant: 'sushi',
+    description: 'B17 simulator: California Roll with brown rice — must not become Holiday Roll',
+    scenario: `You are calling That Sushi Spot for pickup.
+Order a California roll with brown rice.
+If the agent says the California Roll does not come with a rice choice, say "ok that is fine, add it as-is."
+If the agent asks if you still want it, say "yes."
+Once the California Roll is added, say "that's all."`,
+    expected_cart: [{ item_name_contains: 'California Roll', quantity: 1 }],
+    must_not_contain: ['Holiday Roll'],
+    max_turns: 10,
+  },
+
+  // ── GROUP 30: French fries disambiguation ────────────────────────────────
+
+  {
+    id: 'S028', restaurant: 'pizza',
+    description: 'Disambiguation: "french fries" must get $5.79 portion not $29.99 pie',
+    scenario: `You are calling The Pizza Place for pickup.
+Order french fries — a regular portion for one person.
+If they ask you to confirm a large or party size, say "no, just a regular fries for me."
+Once added, say "that's it."`,
+    expected_cart: [{ item_name_contains: 'French Fries', quantity: 1 }],
+    must_not_contain: ['Pie', '9x13'],
+    max_cart_quantity: 1,
+    max_turns: 8,
+  },
+
+  // ── GROUP 31: Knowledge boundary ─────────────────────────────────────────
+
+  {
+    id: 'S029', restaurant: 'hotbagels',
+    description: 'Knowledge boundary: "what\'s your most popular bagel?" then order',
+    scenario: `You are calling Hot Bagels for pickup.
+Ask "what is your most popular bagel?"
+After the agent responds (whether they know or not), order a tuna sandwich on a sesame bagel.
+Once added, say "that's all."`,
+    expected_cart: [{ item_name_contains: 'Tuna', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 10,
+  },
+
+  // ── GROUP 32: Ambiguous order type ───────────────────────────────────────
+
+  {
+    id: 'S030', restaurant: 'tonys',
+    description: 'Ambiguous: customer says "yeah" to pickup/delivery — must clarify',
+    scenario: `You are calling Tony's. When asked if this is for pickup or delivery, say only "yeah."
+If the agent asks you to clarify, say "pickup."
+Then order garlic knots.
+Once added, say "that's it."`,
+    expected_cart: [{ item_name_contains: 'Garlic', quantity: 1 }],
+    must_not_contain: [],
+    max_turns: 8,
+  },
+
 ];
 
 // ─── SIMULATOR RUNNER ────────────────────────────────────────────────────────
