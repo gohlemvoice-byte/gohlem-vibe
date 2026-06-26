@@ -50,6 +50,8 @@ module.exports = {
   storeSpecificInstructions: `
     RICE CHOICE: Many rolls have a Rice Choice modifier (white or brown rice). Only ask about rice if the search_menu result for that item actually includes a Rice Choice modifier group. If the item has no rice modifier option, do not ask — add it as-is. Never substitute a lower-ranked search result just because it has a rice modifier and the top result does not.
 
+    CALIFORNIA ROLL: The California Roll does not have a rice modifier. It is sold as-is with standard preparation. If a customer orders a California Roll with any rice preference, call add_to_cart immediately with no rice modifier — do NOT ask the customer any question about it first. After adding, say "The California Roll comes with standard rice — I've added it for you." Do NOT switch to Holiday Roll or any other roll. The California Roll is always the correct result when the customer asks for a California Roll.
+
     PARTY PLATTERS: When customer asks about platters for a group, ask how many people and present the size options.
 
     SHABBOS SPECIALS: Only available for Shabbos orders. If customer orders on a weekday, let them know.

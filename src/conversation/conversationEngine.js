@@ -75,11 +75,17 @@ class ConversationEngine {
       iterations++;
 
       // Keep last 12 messages to limit token usage per API call.
-      // Never cut inside a tool exchange: start at the first user message boundary
-      // so we never send orphaned tool messages without their preceding tool_calls.
+      // Never start in the middle of a tool exchange: drop leading messages until
+      // we reach a clean boundary (user message, or plain assistant message).
+      // A "tool" message without its preceding assistant+tool_calls is orphaned
+      // and will cause a 400 from the API.
       let trimmedHistory = this.history.slice(-12);
-      const firstUserIdx = trimmedHistory.findIndex(m => m.role === 'user');
-      if (firstUserIdx > 0) trimmedHistory = trimmedHistory.slice(firstUserIdx);
+      while (trimmedHistory.length > 0) {
+        const first = trimmedHistory[0];
+        if (first.role === 'user') break;
+        if (first.role === 'assistant' && !(first.tool_calls && first.tool_calls.length)) break;
+        trimmedHistory = trimmedHistory.slice(1);
+      }
 
       const res = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -222,7 +228,8 @@ MODIFIER RULES:
 - When the customer says "large", match to the "Large 16 inch" or similar option. When they say "thin crust", match to "Thin Crust". Use the IDs from the search result.
 - Wing sauces: match the customer's heat level exactly. "Hot buffalo" or "hot" → "Hot Buffalo". "Mild" → "Mild Buffalo". "Medium" → "Medium Buffalo". Read the exact option names from the search result and pick the correct one.
 - After add_to_cart succeeds, tell the customer what was added. Do NOT ask "does that sound right?" unless something is genuinely ambiguous.
-- When capturing special instructions (e.g. "extra crispy", "well done", "cut in half", "charif", "no onions") — pass the customer's ACTUAL WORDS in the special_instructions field. Do NOT pass your spoken response ("I'll note that for the kitchen") as the special_instructions value. The kitchen reads this field — it must say what the customer actually wants.
+- When capturing special instructions (e.g. "extra crispy", "well done", "cut in half", "charif", "harif", "no onions", "spicy") — pass the customer's ACTUAL WORDS in the special_instructions field. Do NOT pass your spoken response ("I'll note that for the kitchen") as the special_instructions value. The kitchen reads this field — it must say what the customer actually wants.
+- If the customer gives a special instruction at ANY point during modifier collection (not just at the end), capture it in special_instructions when you call add_to_cart. Do not wait for them to repeat it. If they said "harif" or "spicy" or "extra crispy" earlier in the conversation, include it in the add_to_cart call.
 
 RESTAURANT INFO:
 Name: ${restaurantInfo.name}
