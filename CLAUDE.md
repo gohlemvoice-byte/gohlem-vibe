@@ -444,21 +444,22 @@ Likely cause: baked ziti required a confirmation exchange which consumed the tur
 Fix applied: Updated MULTI-ITEM ORDERS rule in conversationEngine.js system prompt.
 "Note ALL items, process each in sequence, do not drop items because one required clarification."
 
-### B08 — Double add when price check triggers re-offer (OPEN)
+### B08 — Double add when price check triggers re-offer (FIXED — code)
 Baked ziti already in cart. Customer asked "how much is the baked ziti?" →
 AI searched → found it → asked "would you like to add that?" → customer said
 "you already added it, I need only one" → AI added a second one anyway.
-Fix: Before add_to_cart, check cart for existing item. If already present, confirm
-duplication intent rather than silently adding again.
-Risk to fix: Medium (requires cart check on every add).
+Fix applied: Guard 6 in toolHandler._addToCart — if item is already in cart,
+returns ALREADY_IN_CART error with prompt to confirm with customer. AI must set
+confirm_duplicate: true (new add_to_cart parameter) only after explicit customer confirmation.
+Verified: C008 conversation benchmark passing (edamame price query stays at qty 1).
 
-### B09 — max_selections ceiling not enforced in code (OPEN)
+### B09 — max_selections ceiling not enforced in code (FIXED — code)
 Customer ordered "grilled tuna AND raw salmon" for poke bowl fish group (max_selections: 1).
 Both were accepted. Cart showed two fish choices on an item that allows only one.
 This sends an invalid order to the kitchen.
-Fix: Code guard in toolHandler — if modifier selection count for a group exceeds
-max_selections, return error and prompt AI to ask customer to pick one.
-Risk to fix: Low-medium (additive validation, won't affect valid orders).
+Fix applied: Guard 3b in toolHandler._addToCart — counts selected options per modifier group,
+returns EXCEEDS_MAX_SELECTIONS error if count exceeds max_selections. AI must ask customer
+to pick one. This is additive validation — cannot block valid orders.
 
 ### B10 — AI re-asks for modifier customer already stated (FIXED — prompt)
 "Lemon butter salmon, a medium" → AI found item → asked "What temperature? Rare, medium, or well done?"

@@ -128,7 +128,7 @@ class ToolHandler {
 
   // ─── add_to_cart ────────────────────────────────────────────────────────────
 
-  _addToCart({ item_id, modifier_option_ids = [], quantity = 1, special_instructions = '' }) {
+  _addToCart({ item_id, modifier_option_ids = [], quantity = 1, special_instructions = '', confirm_duplicate = false }) {
 
     // Guard 1: item must come from the most recent search_menu call
     if (!this.validItemIds.has(item_id)) {
@@ -179,6 +179,33 @@ class ToolHandler {
       };
     }
 
+    // Guard 3b: max_selections — prevent over-selection within a modifier group (B09)
+    const allModGroups = menuItem.modifier_groups || [];
+    const overLimit = [];
+    for (const group of allModGroups) {
+      if (group.max_selections && group.max_selections > 0) {
+        const groupOptionIds = new Set(group.options.map(o => o.id));
+        const selectedFromGroup = modifier_option_ids.filter(id => groupOptionIds.has(id));
+        if (selectedFromGroup.length > group.max_selections) {
+          overLimit.push({
+            group_name: group.name,
+            max_allowed: group.max_selections,
+            selected_count: selectedFromGroup.length,
+            options: group.options.map(o => ({ id: o.id, name: o.name, price: o.price })),
+          });
+        }
+      }
+    }
+    if (overLimit.length > 0) {
+      return {
+        success: false,
+        error: 'EXCEEDS_MAX_SELECTIONS',
+        message: `Too many selections for: ${overLimit.map(g => `${g.group_name} (max ${g.max_allowed}, got ${g.selected_count})`).join(', ')}.`,
+        over_limit_groups: overLimit,
+        prompt: `Ask the customer to pick only ${overLimit.map(g => g.max_allowed === 1 ? `one from ${g.group_name}` : `${g.max_allowed} from ${g.group_name}`).join(', ')}.`,
+      };
+    }
+
     // Guard 4: catering items require advance notice
     if (CATERING_CATEGORIES.includes(menuItem.category)) {
       return {
@@ -198,6 +225,20 @@ class ToolHandler {
         message: `${menuItem.name} costs $${menuItem.base_price.toFixed(2)}, which is significantly higher than your average cart item ($${avgCartPrice.toFixed(2)}).`,
         prompt: `Confirm with the customer: "Just to confirm, you'd like to add ${menuItem.name} at $${menuItem.base_price.toFixed(2)}?"`,
       };
+    }
+
+    // Guard 6: duplicate detection — warn AI when item already in cart (B08)
+    if (!confirm_duplicate) {
+      const existing = this.cart.getActiveItems().find(i => i.menuItemId === item_id);
+      if (existing) {
+        return {
+          success: false,
+          error: 'ALREADY_IN_CART',
+          message: `${menuItem.name} is already in the cart (qty: ${existing.quantity}, cart_item_id: ${existing.cartItemId}). The customer may have been asking about it, not ordering it again.`,
+          existing_cart_item_id: existing.cartItemId,
+          prompt: `Ask the customer: "You already have ${menuItem.name} in your order — did you want to add another one?" If yes, call add_to_cart again with confirm_duplicate: true.`,
+        };
+      }
     }
 
     // Build modifier objects for the cart
