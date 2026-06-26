@@ -114,7 +114,7 @@ const TEST_CASES = [
   {
     id: 'C009', restaurant: 'sushi',
     description: 'B17: california roll with brown rice → must be California Roll, NOT Holiday Roll',
-    turns: ['pickup', 'I want a california roll with brown rice'],
+    turns: ['pickup', 'I want a california roll with brown rice', 'yes'],
     expected_cart: [{ item_name_contains: 'California Roll', quantity: 1 }],
     must_not_contain: ['Holiday Roll'],
   },
@@ -129,12 +129,12 @@ const TEST_CASES = [
   // ── GROUP 4: B07 — multi-item must not drop ──────────────────────────────
 
   {
-    id: 'C011', restaurant: 'tonys',
+    id: 'C011', restaurant: 'pizza',
     description: 'B07: three items in one sentence — all three must land in cart',
-    turns: ['pickup', 'I want garlic knots, mozzarella sticks, and a mushroom barley soup'],
+    turns: ['pickup', 'I want french fries, baked ziti, and a mushroom barley soup'],
     expected_cart: [
-      { item_name_contains: 'Garlic Knots',    quantity: 1 },
-      { item_name_contains: 'Mozzarella',      quantity: 1 },
+      { item_name_contains: 'French Fries',    quantity: 1 },
+      { item_name_contains: 'Baked Ziti',      quantity: 1 },
       { item_name_contains: 'Mushroom Barley', quantity: 1 },
     ],
     must_not_contain: [],
@@ -212,14 +212,14 @@ Once your order is confirmed, say "perfect, thank you."`,
   },
 
   {
-    id: 'S003', restaurant: 'tonys',
+    id: 'S003', restaurant: 'pizza',
     description: 'B07: three items in one breath — all three must land',
-    scenario: `You are calling to order for pickup. In your very first order message, say all three items at once:
-"I want garlic knots, mozzarella sticks, and a mushroom barley soup."
+    scenario: `You are calling The Pizza Place to order for pickup. In your very first order message, say all three items at once:
+"I want french fries, baked ziti, and a mushroom barley soup."
 Answer any questions the agent asks. Once all three are confirmed, say "that's everything."`,
     expected_cart: [
-      { item_name_contains: 'Garlic Knots',    quantity: 1 },
-      { item_name_contains: 'Mozzarella',      quantity: 1 },
+      { item_name_contains: 'French Fries',    quantity: 1 },
+      { item_name_contains: 'Baked Ziti',      quantity: 1 },
       { item_name_contains: 'Mushroom Barley', quantity: 1 },
     ],
     must_not_contain: [],
