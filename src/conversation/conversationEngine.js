@@ -34,6 +34,9 @@ class ConversationEngine {
     // Delivery address (captured mid-conversation)
     this.deliveryAddress = null;
 
+    // Turn counter: increments on each user message, used by toolHandler for Guard 6.
+    this.turnId = 0;
+
     // Human fallback: tracks failed item queries
     this.failureCounter = new Map();
 
@@ -53,6 +56,10 @@ class ConversationEngine {
   async chat(userText) {
     this.history.push({ role: 'user', content: userText });
 
+    // Advance turn counter and reset per-turn state in tool handler.
+    this.turnId++;
+    this.toolHandler.beginTurn(this.turnId);
+
     // Detect pickup/delivery from user text — store on cart
     this._captureOrderType(userText);
 
@@ -70,6 +77,8 @@ class ConversationEngine {
 
   async _runToolLoop() {
     let iterations = 0;
+    let searchCalledThisTurn = false;  // B01: track whether search_menu was called
+    const currentTurnToolCalls = [];   // B04: log all tool calls for investigation
 
     while (iterations < MAX_TOOL_ITERATIONS) {
       iterations++;
@@ -103,7 +112,28 @@ class ConversationEngine {
 
       // No tool calls — this is the final spoken response
       if (!msg.tool_calls || msg.tool_calls.length === 0) {
-        return msg.content || "I'm sorry, I didn't catch that. Could you repeat?";
+        const responseText = msg.content || "I'm sorry, I didn't catch that. Could you repeat?";
+
+        // B01: intercept denial language when no search was called this turn.
+        // If the AI says "we don't have X" without ever calling search_menu, force a search.
+        const hasDenialLanguage = /\b(don't have|not on (our |the )?menu|we don't carry|not (currently )?available|do not (currently )?have|we don't (currently )?offer|isn't on our menu|not something we (carry|have|offer))\b/i.test(responseText);
+        if (hasDenialLanguage && !searchCalledThisTurn) {
+          this.history.push({
+            role: 'user',
+            content: '[System alert: You responded with denial language but did not call search_menu first. You MUST call search_menu before telling a customer an item is unavailable. Call search_menu now for the customer\'s request.]',
+          });
+          continue;
+        }
+
+        // B04 investigation: log when human fallback is triggered.
+        // Do NOT change fallback behavior — log only until root cause is known.
+        if (/connect you (with|to) someone|transfer you|let me get someone/i.test(responseText)) {
+          console.log('[B04] Human fallback triggered on turn', this.turnId);
+          console.log('[B04] Tool calls this turn:', JSON.stringify(currentTurnToolCalls));
+          console.log('[B04] Cart state:', JSON.stringify(this.toolHandler._getCart()));
+        }
+
+        return responseText;
       }
 
       // Process tool calls and add results to history
@@ -117,8 +147,21 @@ class ConversationEngine {
           args = {};
         }
 
+        if (call.function.name === 'search_menu') searchCalledThisTurn = true;
+        currentTurnToolCalls.push({ name: call.function.name, args });
+
         const result = this.toolHandler.execute(call.function.name, args);
         this._trackFailures(call.function.name, args, result);
+
+        // B13: when add_to_cart fails with MISSING_REQUIRED, check if the customer
+        // mentioned special instructions earlier and remind the AI to include them on retry.
+        if (call.function.name === 'add_to_cart' && result.error === 'MISSING_REQUIRED') {
+          const specialHint = this._extractSpecialInstructionsFromHistory();
+          if (specialHint) {
+            result.special_instructions_reminder =
+              `Customer previously said: "${specialHint}" — when retrying add_to_cart after getting the modifier answer, pass this in special_instructions.`;
+          }
+        }
 
         this.history.push({
           role: 'tool',
@@ -130,6 +173,25 @@ class ConversationEngine {
 
     // Safety fallback if tool loop hits max iterations
     return "I'm having trouble with that. Let me connect you with someone who can help.";
+  }
+
+  // B13 helper: scan recent user messages for special instruction keywords.
+  _extractSpecialInstructionsFromHistory() {
+    const keywords = [
+      'harif', 'charif', 'spicy', 'extra crispy', 'well done', 'medium', 'rare',
+      'toasted', 'untoasted', 'light sauce', 'extra sauce', 'no onion', 'no lettuce',
+      'no tomato', 'extra pickles', 'no pickles', 'crispy', 'burnt', 'light ice',
+      'no ice', 'extra cheese', 'no cheese',
+    ];
+    const userMsgs = this.history
+      .filter(m => m.role === 'user' && !m.content.startsWith('[System'))
+      .slice(-4);
+    for (const msg of [...userMsgs].reverse()) {
+      const lower = msg.content.toLowerCase();
+      const found = keywords.filter(kw => lower.includes(kw));
+      if (found.length > 0) return found.join(', ');
+    }
+    return null;
   }
 
   // ─── ORDER TYPE & ADDRESS CAPTURE ───────────────────────────────────────────

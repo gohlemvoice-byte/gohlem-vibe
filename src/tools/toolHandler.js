@@ -24,8 +24,24 @@ class ToolHandler {
     this.validModifierIds = new Map(); // itemId -> Set<optionId>
     this.lastSearchItems = [];         // full item objects from last search
 
+    // Turn tracking: prevents cross-turn duplicate adds (B08/B05 fix).
+    this.currentTurnId = 0;
+    this.cartItemsAddedThisTurn = new Set(); // menu item IDs added this turn
+
+    // Per-search result tracking for top-result enforcement (B17 fix).
+    // Each search_menu call appends one entry: { topResultId, allResultIds, clarificationNeeded }
+    // Guard 7 checks each add_to_cart against the search that returned that item.
+    this.searchResults = [];
+
     // Failure counter: tracks how many times the same query has failed.
     this.failureCounts = new Map();
+  }
+
+  // Called at the start of each user turn to reset per-turn state.
+  beginTurn(turnId) {
+    this.currentTurnId = turnId;
+    this.cartItemsAddedThisTurn.clear();
+    this.searchResults = [];
   }
 
   execute(toolName, args) {
@@ -73,9 +89,22 @@ class ToolHandler {
     }
 
     const clarification_needed = this.engine.needsClarification(scored);
-    const items = scored.map(r => this._formatItem(r.item));
+    const items = scored.map((r, i) => {
+      const formatted = this._formatItem(r.item);
+      if (i === 0) formatted.is_top_result = true;
+      return formatted;
+    });
 
     this._populateValidSet(scored.map(r => r.item));
+
+    // Register this search for Guard 7 (B17 — top result enforcement).
+    // Tracked per-search so multi-item orders (multiple search calls per turn)
+    // each get their own top-result record and don't interfere with each other.
+    this.searchResults.push({
+      topResultId: scored[0].item.id,
+      allResultIds: new Set(scored.map(r => r.item.id)),
+      clarificationNeeded: clarification_needed,
+    });
 
     return {
       found: true,
@@ -227,6 +256,26 @@ class ToolHandler {
       };
     }
 
+    // Guard 7: top-result enforcement (B17 fix).
+    // Find the specific search that returned this item, then check if the item
+    // was the top result for that search. Only blocks when the search was confident
+    // (clarification not needed). Prevents silent item substitution (California
+    // Roll → Holiday Roll) without breaking multi-item orders.
+    const relevantSearch = this.searchResults.find(s => s.allResultIds.has(item_id));
+    if (relevantSearch && item_id !== relevantSearch.topResultId && !relevantSearch.clarificationNeeded) {
+      const topItem = this.engine.getItemById(relevantSearch.topResultId);
+      if (topItem) {
+        return {
+          success: false,
+          error: 'NOT_TOP_RESULT',
+          message: `The best match was "${topItem.name}" (ID: ${relevantSearch.topResultId}), not "${menuItem.name}". Use the top result unless the customer explicitly asked for a different item.`,
+          top_result_id: relevantSearch.topResultId,
+          top_result_name: topItem.name,
+          prompt: `Use item_id "${relevantSearch.topResultId}" (${topItem.name}) instead. Only proceed with "${menuItem.name}" if the customer specifically requested it.`,
+        };
+      }
+    }
+
     // Build modifier objects for the cart
     const modifiers = modifier_option_ids.map(optId => {
       const opt = this.engine.getOptionById(menuItem, optId);
@@ -240,6 +289,9 @@ class ToolHandler {
     });
 
     const cartItemId = this.cart.addItem(menuItem, modifiers, quantity, special_instructions);
+
+    // Track this add for Guard 6 same-turn detection.
+    this.cartItemsAddedThisTurn.add(item_id);
 
     // Remove ONLY this item from the valid set. Other items searched in the
     // same turn (parallel searches for multi-item orders) remain valid.
