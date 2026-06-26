@@ -297,6 +297,12 @@ The following were tested with real messy voice input across all four restaurant
 - Remove one of two identical items ✓
 - Two different cheese pastries in one turn ✓
 - "nachiris" → nigiri (partially — mapped to roll instead; see bugs below)
+- "adamehame" → edamame ✓ (B15 fix verified)
+- Temperature stated upfront ("cooked medium") → not re-asked ✓ (B10 fix verified)
+- Special instructions show customer's actual words ("harif") not AI confirmation ✓ (B13 fix verified)
+- Spicy tuna roll + edamame in one sentence → both added correctly ✓ (B07 fix verified)
+- Mid-order correction (thin crust → hand tossed) ✓ (regression confirmed still working)
+- California Roll with no rice modifier — AI sometimes substitutes Holiday Roll (see B17)
 
 ### SOLVED STRUCTURALLY BY ARCHITECTURE
 P06 modifier context loss — tool calling + state machine prevents new searches during modifier collection
@@ -365,7 +371,7 @@ P34 race condition
 - `src/config/hotBagelsConfig.js` — Hot Bagels config with kosher FAQ, special terminology.
 - `src/config/sushiSpotConfig.js` — Sushi Spot config with hours, Shabbos notes.
 - `src/config/pizzaPlaceConfig.js` — Pizza Place config with hours, cream cheese roll Thursday rule.
-- `tests/benchmark.js` — Accuracy test runner (Tony's: 14/14 passing).
+- `tests/benchmark.js` — Accuracy test runner (menu engine: 25/25 passing as of version Bravo).
 - `tests/benchmark-cases/phase1-standard.json` — Standard test cases.
 - `tests/benchmark-cases/phase1-embedding-gap.json` — Embedding gap cases.
 
@@ -393,11 +399,11 @@ Fix: Prompt reinforcement + code-layer check. Do not call AI's response final if
 contains denial language and no search_menu was called that turn.
 Risk to fix: Low (prompt only is safe; code guard needs care with false positives).
 
-### B02 — AI suggests items it has not verified (OPEN)
+### B02 — AI suggests items it has not verified (FIXED — prompt)
 AI said "try iced tea or lemonade" (from training data), then when asked for iced tea
 said it wasn't on the menu. Never suggest an item by name without seeing it in a search result.
-Fix: Prompt rule. "Never name a specific alternative without searching for it first."
-Risk to fix: None (prompt addition only).
+Fix applied: Added CRITICAL TOOL RULES rule 10 to conversationEngine.js system prompt.
+"Never name a specific alternative without searching for it first."
 
 ### B03 — Human fallback fires on impatience, not just failures (OPEN)
 Customer said "are you here?" during processing → AI immediately offered human transfer.
@@ -431,13 +437,12 @@ Fix: When a customer is mid-customization of an existing item, the AI must use
 update_cart_item rather than treating the request as a new item search.
 Risk to fix: Medium (same as B05 — context awareness during customization).
 
-### B07 — Dropped items in multi-item turn (OPEN)
+### B07 — Dropped items in multi-item turn (FIXED — prompt)
 "Regular pie, baked ziti, and mushroom barley soup" → soup never added.
 The AI processed the pie and ziti but dropped the third item.
 Likely cause: baked ziti required a confirmation exchange which consumed the turn.
-Fix: Prompt rule. "When the customer orders multiple items in one sentence, hold the
-full list in working memory and process every item before asking for anything else."
-Risk to fix: Low (prompt only).
+Fix applied: Updated MULTI-ITEM ORDERS rule in conversationEngine.js system prompt.
+"Note ALL items, process each in sequence, do not drop items because one required clarification."
 
 ### B08 — Double add when price check triggers re-offer (OPEN)
 Baked ziti already in cart. Customer asked "how much is the baked ziti?" →
@@ -455,12 +460,12 @@ Fix: Code guard in toolHandler — if modifier selection count for a group excee
 max_selections, return error and prompt AI to ask customer to pick one.
 Risk to fix: Low-medium (additive validation, won't affect valid orders).
 
-### B10 — AI re-asks for modifier customer already stated (OPEN)
+### B10 — AI re-asks for modifier customer already stated (FIXED — prompt)
 "Lemon butter salmon, a medium" → AI found item → asked "What temperature? Rare, medium, or well done?"
 Customer had to repeat "I said medium."
-Fix: Prompt rule (already partially there, needs strengthening).
-"Map stated modifiers immediately. Never ask for something the customer already told you."
-Risk to fix: Low (prompt only).
+Fix applied: Strengthened REQUIRED modifiers rule in conversationEngine.js system prompt.
+"If the customer said medium you do not ask what temperature. Map it and move on."
+Verified working in testing: lemon butter salmon cooked medium added correctly without re-asking.
 
 ### B11 — Unnecessary confirmation on clear intent (OPEN)
 "I would like to have a regular pie" → AI found it → "Would you like to add that to your order?"
@@ -469,20 +474,20 @@ Fix: Prompt rule. "If ordering signal is unambiguous, add immediately. Do not co
 Must be precise — "do you have X?" is NOT an ordering signal; "I'll have X" IS.
 Risk to fix: Low (prompt only), but see concern above about browsing vs ordering edge case.
 
-### B12 — "One moment please" filler creates phone silence (OPEN)
+### B12 — "One moment please" filler creates phone silence (FIXED — prompt, partially)
 On a phone call, TTS says "one moment please" then 4 seconds of silence.
 Callers hang up thinking the call dropped.
-Fix: Replace with a shorter, more natural filler like "Sure" or nothing at all.
-Do NOT remove all acknowledgment — silence is worse than bad filler.
-Risk to fix: Low (prompt only), but do not remove entirely.
+Fix applied: Added rule to VOICE FORMAT section in conversationEngine.js system prompt.
+"Do NOT say one moment please. Say Sure or Got it — one word only."
+Status: Mostly working in testing. One session still triggered the filler. Monitor in further tests.
 
-### B13 — Special instructions field contains AI's spoken confirmation (OPEN)
+### B13 — Special instructions field contains AI's spoken confirmation (FIXED — prompt)
 Tuna sandwich cart showed special_instructions = "I'll note that for the kitchen."
 That is the AI's verbal response, not the actual kitchen note.
 The kitchen should receive "harif, pickles" not "I'll note that for the kitchen."
-Fix: Prompt rule. "Pass the customer's actual request in special_instructions, not
-your verbal acknowledgment of it."
-Risk to fix: Low (prompt only).
+Fix applied: Updated special_instructions rule in conversationEngine.js system prompt.
+"Pass the customer's ACTUAL WORDS. The kitchen reads this field."
+Verified working: tuna sandwich with harif now shows 📝 harif in cart, not the AI's spoken line.
 
 ### B14 — Zero-quantity items visible in cart (OPEN)
 When size was upgraded (small → large), old small poke bowl showed as "×0 — $0.00" in cart.
@@ -490,11 +495,29 @@ This confuses customers and staff.
 Fix: UI fix in voiceTest.html — filter out items with quantity === 0 before rendering.
 Risk to fix: None (UI only, no engine logic).
 
-### B15 — Nigiri ordered, roll added instead (OPEN)
+### B15 — Nigiri ordered, roll added instead (FIXED — config)
 Customer said "two black pepper tuna nachiris" (nigiri) → added as "Black Pepper Tuna Roll."
 These are different items with different prices.
-Fix: Add nigiri terminology to sushi config. Ensure search query is "black pepper tuna nigiri."
-Risk to fix: None (config addition only).
+Fix applied: Added nigiri/najiri/nachiris/nachiri to sushiSpotConfig.js specialTerminology.
+Also added pokeball → poke bowl, adamame → edamame.
+Verified: "adamehame" → edamame found and added correctly in testing.
+
+### B17 — AI substitutes lower-ranked item when top result has no matching modifier (OPEN)
+"California roll with brown rice" → Holiday Roll added instead of California Roll.
+Root cause: California Roll has NO rice modifier group. The AI searched, got California Roll
+as top result (score 210), but because California Roll doesn't support a rice choice, the AI
+autonomously switched to Holiday Roll (score 28) which does have a Rice Choice modifier.
+This is NOT a search scoring bug — the engine returns the correct item. It is an AI
+decision bug: the AI is substituting items based on modifier availability instead of
+using the top-scored result.
+Fix: Prompt rule. "Always use the top-scored search result. Never substitute a lower-ranked
+item because the top result doesn't support a modifier the customer mentioned. If the item
+has no such modifier option, add it as-is and inform the customer."
+Risk to fix: Low (prompt only).
+Note: California Roll in the sushi menu has no rice modifier — it comes as standard.
+The sushiSpotConfig storeSpecificInstructions says "all rolls require a rice choice" which
+is incorrect for California Roll. This instruction may be causing the AI to seek a roll
+with a rice modifier. The instruction needs to be qualified.
 
 ### B16 — Poke bowl asks each modifier group separately — poor UX (OPEN)
 5 required groups (base, fish, vegetables×4, toppings×3, sauce×2) = 5+ separate exchanges.
@@ -591,10 +614,6 @@ Manual speech testing completed: ~20 sessions across all four restaurants.
 - Add hours enforcement, store hours check before greeting
 - Add zero-quantity item filter to cart UI (B14)
 - Target: 40/50 on expanded benchmark before Phase 3
-
-### Phase 3 — Voice Layer
-Connect Twilio + Deepgram. Address P01-P05, P34 at infrastructure level.
-The conversation engine does not change — only the input/output layer.
 
 ### Phase 3 — Voice Layer
 Connect Twilio + Deepgram. Address P01-P05, P34 at infrastructure level.
