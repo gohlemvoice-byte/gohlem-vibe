@@ -6,10 +6,9 @@ let pool = null;
 
 function getPool() {
   if (!pool) {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
-    });
+    // Let pg parse SSL settings from the connection string itself.
+    // Railway's internal Postgres URL does not require explicit ssl config.
+    pool = new Pool({ connectionString: process.env.DATABASE_URL });
   }
   return pool;
 }

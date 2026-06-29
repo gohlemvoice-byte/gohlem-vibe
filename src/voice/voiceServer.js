@@ -3,8 +3,9 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
-const express = require('express');
-const http    = require('http');
+const express    = require('express');
+const http       = require('http');
+const WebSocket  = require('ws');
 
 const ConversationEngine = require('../conversation/conversationEngine');
 const restaurantConfig   = require('../config/restaurantConfig');
@@ -13,6 +14,7 @@ const sushiSpotConfig    = require('../config/sushiSpotConfig');
 const pizzaPlaceConfig   = require('../config/pizzaPlaceConfig');
 const transcriptStore    = require('../db/transcriptStore');
 const retellHandler      = require('./retellHandler');
+const twilioHandler      = require('./twilioHandler');
 
 const RESTAURANT_CONFIGS = {
   tonys:      restaurantConfig,
@@ -20,6 +22,11 @@ const RESTAURANT_CONFIGS = {
   sushi:      sushiSpotConfig,
   pizza:      pizzaPlaceConfig,
 };
+
+// ─── VOICE LAYER TOGGLE ───────────────────────────────────────────────────────
+// Set VOICE_LAYER=twilio in Railway to switch to Twilio + Deepgram.
+// Default (unset or "retell") uses Retell.
+const VOICE_LAYER = (process.env.VOICE_LAYER || 'retell').toLowerCase();
 
 const PORT   = process.env.PORT || 3000;
 const DG_KEY = process.env.DEEPGRAM_API_KEY;
@@ -30,8 +37,6 @@ app.use(express.json());
 
 // sessionId → browser test session  { engine, lastActivity }
 const browserSessions = new Map();
-// last 30 completed call transcripts (in-memory fallback)
-const callHistory = [];
 
 // Purge browser sessions idle for more than 30 minutes
 setInterval(() => {
@@ -69,16 +74,14 @@ function log(id, msg) {
 // ─── HEALTH ───────────────────────────────────────────────────────────────────
 
 app.get('/health', (_req, res) => {
+  const handler    = VOICE_LAYER === 'twilio' ? twilioHandler : retellHandler;
   res.json({
     status:      'ok',
+    voiceLayer:  VOICE_LAYER,
     restaurant:  restaurantConfig.restaurantInfo.name,
-    activeCalls: retellHandler.getActiveCallCount(),
+    activeCalls: handler.getActiveCallCount(),
   });
 });
-
-// ─── RETELL WEBHOOK ───────────────────────────────────────────────────────────
-
-app.post('/retell/chat', retellHandler.handleWebhook);
 
 // ─── BROWSER VOICE TEST ──────────────────────────────────────────────────────
 
@@ -103,7 +106,7 @@ app.get('/voice/transcripts', async (_req, res) => {
     }));
   } catch (err) {
     log(null, `Transcripts DB read failed, using memory: ${err.message}`);
-    calls = callHistory.map(c => ({ ...c, avgLatency: null }));
+    calls = [];
   }
 
   function renderCall(call) {
@@ -236,11 +239,11 @@ app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, 
       orderType:      session.engine.cart.orderType || null,
       restaurantName: session.engine.config.restaurantInfo.name,
       items: order.items.map(i => ({
-        name:               i.name,
-        quantity:           i.quantity,
-        modifiers:          i.modifiers.map(m => m.name),
+        name:                i.name,
+        quantity:            i.quantity,
+        modifiers:           i.modifiers.map(m => m.name),
         specialInstructions: i.specialInstructions || '',
-        lineTotal:          i.lineTotal,
+        lineTotal:           i.lineTotal,
       })),
       total: order.total,
     };
@@ -253,15 +256,49 @@ app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, 
   }
 });
 
-// ─── START ────────────────────────────────────────────────────────────────────
+// ─── START SERVER ─────────────────────────────────────────────────────────────
 
 transcriptStore.init()
   .then(() => log(null, 'DB: call_transcripts table ready'))
-  .catch(err => log(null, `DB init failed (transcripts will use memory only): ${err.message}`));
+  .catch(err => log(null, `DB init failed (transcripts will use memory only): ${err.message || err.code || 'unknown error'}`));
 
 const server = http.createServer(app);
-server.listen(PORT, () => {
-  log(null, `Gohlem.ai voice server on port ${PORT}`);
-  log(null, `Voice layer: Retell  |  Webhook: POST /retell/chat`);
-  log(null, `Browser test: GET /voice/test  |  Transcripts: GET /voice/transcripts`);
-});
+
+if (VOICE_LAYER === 'twilio') {
+  // ── TWILIO + DEEPGRAM ─────────────────────────────────────────────────────
+  // Registers /voice/inbound, /voice/fallback, and WebSocket at /voice/stream
+  twilioHandler.attach(server, app);
+  server.listen(PORT, () => {
+    log(null, `Gohlem.ai voice server on port ${PORT}`);
+    log(null, `Voice layer: Twilio  |  WebSocket: /voice/stream`);
+    log(null, `Browser test: GET /voice/test  |  Transcripts: GET /voice/transcripts`);
+    log(null, `To switch to Retell: set VOICE_LAYER=retell in Railway`);
+  });
+
+} else {
+  // ── RETELL (default) ──────────────────────────────────────────────────────
+  // Retell connects to wss://your-server/retell/chat/{call_id} via WebSocket
+  const retellWss = new WebSocket.Server({ noServer: true });
+
+  server.on('upgrade', (req, socket, head) => {
+    const url = new URL(req.url, 'http://localhost');
+    if (url.pathname.startsWith('/retell/chat')) {
+      retellWss.handleUpgrade(req, socket, head, ws => retellWss.emit('connection', ws, req));
+    } else {
+      socket.destroy();
+    }
+  });
+
+  retellWss.on('connection', (ws, req) => {
+    const parts  = new URL(req.url, 'http://localhost').pathname.split('/').filter(Boolean);
+    const callId = parts[parts.length - 1]; // last segment is the call_id
+    retellHandler.handleConnection(ws, callId);
+  });
+
+  server.listen(PORT, () => {
+    log(null, `Gohlem.ai voice server on port ${PORT}`);
+    log(null, `Voice layer: Retell  |  WebSocket: /retell/chat/{call_id}`);
+    log(null, `Browser test: GET /voice/test  |  Transcripts: GET /voice/transcripts`);
+    log(null, `To switch to Twilio: set VOICE_LAYER=twilio in Railway`);
+  });
+}
