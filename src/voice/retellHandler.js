@@ -101,8 +101,9 @@ async function fetchRetellCost(callId) {
       const total = callCostRaw.combined_cost ?? callCostRaw.total ?? callCostRaw.amount ??
                     callCostRaw.cost ?? callCostRaw.total_cost ?? null;
       if (total != null) {
-        const val = Number(total);
-        console.log(`[Retell:${callId.slice(-8)}] Retell call cost: $${val}`);
+        // Retell returns combined_cost in cents — divide by 100 for dollars
+        const val = Number(total) / 100;
+        console.log(`[Retell:${callId.slice(-8)}] Retell call cost: $${val.toFixed(4)} (raw: ${total})`);
         return isNaN(val) ? null : val;
       }
       console.log(`[Retell:${callId.slice(-8)}] call_cost object keys: ${Object.keys(callCostRaw).join(', ')}`);
