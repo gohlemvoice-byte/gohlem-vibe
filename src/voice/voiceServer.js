@@ -161,7 +161,6 @@ app.get('/voice/transcripts', async (_req, res) => {
   res.send(`<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <title>Gohlem Call Transcripts</title>
-<meta http-equiv="refresh" content="30">
 <style>
   body { font-family: sans-serif; background: #0f0f0f; color: #eee; padding: 24px; max-width: 800px; margin: auto; }
   h1 { font-size: 18px; color: #aaa; margin-bottom: 4px; }
@@ -285,9 +284,13 @@ app.post('/voice/test', express.raw({ type: '*/*', limit: '5mb' }), async (req, 
 
 // ─── START SERVER ─────────────────────────────────────────────────────────────
 
-transcriptStore.init()
-  .then(() => log(null, 'DB: call_transcripts table ready'))
-  .catch(err => log(null, `DB init failed (transcripts will use memory only): ${err.message || err.code || 'unknown error'}`));
+if (!process.env.DATABASE_URL) {
+  log(null, 'DB: DATABASE_URL not set — transcripts will not be saved');
+} else {
+  transcriptStore.init()
+    .then(() => log(null, 'DB: call_transcripts table ready'))
+    .catch(err => log(null, `DB init failed: ${err.message || err.code || JSON.stringify(err)}`));
+}
 
 const server = http.createServer(app);
 
