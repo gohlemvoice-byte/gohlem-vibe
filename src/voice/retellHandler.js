@@ -73,23 +73,41 @@ function streamText(ws, responseId, text, endCall = false) {
 }
 
 // Fetch actual cost from Retell API — requires RETELL_API_KEY in Railway env vars.
-// Returns cost in USD (e.g. 0.0480) or null if unavailable.
+// Returns cost in USD (e.g. 0.114) or null if unavailable.
 async function fetchRetellCost(callId) {
   const apiKey = process.env.RETELL_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.log(`[Retell:${callId.slice(-8)}] RETELL_API_KEY not set — skipping cost fetch`);
+    return null;
+  }
   try {
     const res = await fetch(`https://api.retellai.com/v2/get-call/${callId}`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    // Try known field names from Retell's response schema
-    const cost = data.call_cost ?? data.cost_usd ?? data.cost ?? null;
-    if (cost != null) console.log(`[Retell:${callId.slice(-8)}] Retell call cost: $${cost}`);
-    else console.log(`[Retell:${callId.slice(-8)}] Retell cost fields: ${Object.keys(data).join(', ')}`);
-    return typeof cost === 'number' ? cost : null;
+    const body = await res.text();
+    if (!res.ok) {
+      console.error(`[Retell:${callId.slice(-8)}] Cost fetch HTTP ${res.status}: ${body.slice(0, 200)}`);
+      return null;
+    }
+    let data;
+    try { data = JSON.parse(body); } catch { console.error(`[Retell] Cost parse error: ${body.slice(0,100)}`); return null; }
+
+    // Log the full response so we can see what fields Retell actually sends
+    console.log(`[Retell:${callId.slice(-8)}] get-call response keys: ${Object.keys(data).join(', ')}`);
+
+    // Try all known field names — will log which one matched
+    const cost = data.call_cost ?? data.cost_usd ?? data.cost ?? data.total_cost ?? data.billing_cost ?? null;
+    if (cost != null) {
+      const val = typeof cost === 'string' ? parseFloat(cost) : cost;
+      console.log(`[Retell:${callId.slice(-8)}] Retell call cost: $${val}`);
+      return isNaN(val) ? null : val;
+    }
+
+    // Cost field not found — log the full response for debugging
+    console.log(`[Retell:${callId.slice(-8)}] Cost field not found. Full response: ${body.slice(0, 500)}`);
+    return null;
   } catch (err) {
-    console.error(`[Retell] Cost fetch failed: ${err.message}`);
+    console.error(`[Retell] Cost fetch exception: ${err.message}`);
     return null;
   }
 }
