@@ -117,6 +117,7 @@ async function handleConnection(ws, callId) {
       // ── CALL STARTED ──────────────────────────────────────────────────────────
       if (interaction_type === 'call_started') {
         const config = getConfig(agentId);
+        console.log(`${tag(callId)} agent_id="${agentId}" → restaurant="${config.restaurantInfo.name}"`);
         session = {
           engine:     new ConversationEngine(config),
           startTime:  Date.now(),
