@@ -202,18 +202,9 @@ app.get('/voice/transcripts', async (_req, res) => {
 <div class="sub">${calls.length} call(s) stored &nbsp;·&nbsp; click a call to expand &nbsp;·&nbsp; survives deploys</div>
 ${calls.length === 0 ? '<div class="empty">No calls yet — make a call and refresh.</div>' : rows}
 <script>
-  var open = null;
   function toggle(idx) {
-    var body = document.getElementById('body-' + idx);
-    var chev = document.getElementById('chev-' + idx);
-    if (open !== null && open !== idx) {
-      document.getElementById('body-' + open).classList.remove('open');
-      document.getElementById('chev-' + open).classList.remove('open');
-    }
-    var opening = !body.classList.contains('open');
-    body.classList.toggle('open');
-    chev.classList.toggle('open');
-    open = opening ? idx : null;
+    document.getElementById('body-' + idx).classList.toggle('open');
+    document.getElementById('chev-' + idx).classList.toggle('open');
   }
 </script>
 </body></html>`);
