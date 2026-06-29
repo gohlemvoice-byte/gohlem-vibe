@@ -119,7 +119,7 @@ app.get('/voice/transcripts', async (_req, res) => {
     calls = [];
   }
 
-  function renderCall(call) {
+  function renderCall(call, idx) {
     const turns = (call.transcript || []).map(t => {
       const time    = new Date(t.ts).toLocaleTimeString('en-US', { hour12: false });
       const latency = t.latencyMs != null
@@ -144,20 +144,23 @@ app.get('/voice/transcripts', async (_req, res) => {
 
     const when = new Date(call.startTime).toLocaleString('en-US', { timeZone: 'America/New_York', hour12: false });
     return `
-      <div class="call">
-        <div class="call-header">
+      <div class="call" id="call-${idx}">
+        <div class="call-header" onclick="toggle(${idx})">
+          <span class="chevron" id="chev-${idx}">▶</span>
           📞 ${when} &nbsp;|&nbsp; ${call.duration}s &nbsp;|&nbsp;
           ${call.items} item(s) &nbsp;|&nbsp; $${call.total}
           ${avg ? `&nbsp;|&nbsp; <strong>avg latency: ${avg}ms</strong>` : ''}
           ${call.restaurant ? `&nbsp;|&nbsp; ${call.restaurant}` : ''}
           <span class="sid">${call.callSid}</span>
         </div>
-        <div class="cart-section"><div class="cart-title">Cart</div>${cartHtml}<div class="cart-total">Total: $${call.total}</div></div>
-        <div class="turns">${turns}</div>
+        <div class="call-body" id="body-${idx}">
+          <div class="cart-section"><div class="cart-title">Cart</div>${cartHtml}<div class="cart-total">Total: $${call.total}</div></div>
+          <div class="turns">${turns}</div>
+        </div>
       </div>`;
   }
 
-  const rows = calls.map(renderCall).join('');
+  const rows = calls.map((c, i) => renderCall(c, i)).join('');
   res.send(`<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <title>Gohlem Call Transcripts</title>
@@ -165,9 +168,14 @@ app.get('/voice/transcripts', async (_req, res) => {
   body { font-family: sans-serif; background: #0f0f0f; color: #eee; padding: 24px; max-width: 800px; margin: auto; }
   h1 { font-size: 18px; color: #aaa; margin-bottom: 4px; }
   .sub { font-size: 12px; color: #444; margin-bottom: 24px; }
-  .call { background: #1a1a1a; border-radius: 10px; margin-bottom: 28px; overflow: hidden; }
-  .call-header { background: #222; padding: 10px 16px; font-size: 13px; color: #888; }
+  .call { background: #1a1a1a; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+  .call-header { background: #222; padding: 10px 16px; font-size: 13px; color: #888; cursor: pointer; user-select: none; }
+  .call-header:hover { background: #2a2a2a; }
   .call-header strong { color: #f90; }
+  .chevron { display: inline-block; margin-right: 8px; font-size: 10px; color: #555; transition: transform 0.15s; }
+  .chevron.open { transform: rotate(90deg); color: #888; }
+  .call-body { display: none; }
+  .call-body.open { display: block; }
   .sid { float: right; font-size: 11px; color: #444; }
   .turns { padding: 16px; }
   .turn { margin-bottom: 12px; }
@@ -191,8 +199,23 @@ app.get('/voice/transcripts', async (_req, res) => {
 </style>
 </head><body>
 <h1>Gohlem Call Transcripts</h1>
-<div class="sub">${calls.length} call(s) stored &nbsp;·&nbsp; auto-refreshes every 30s &nbsp;·&nbsp; survives deploys</div>
+<div class="sub">${calls.length} call(s) stored &nbsp;·&nbsp; click a call to expand &nbsp;·&nbsp; survives deploys</div>
 ${calls.length === 0 ? '<div class="empty">No calls yet — make a call and refresh.</div>' : rows}
+<script>
+  var open = null;
+  function toggle(idx) {
+    var body = document.getElementById('body-' + idx);
+    var chev = document.getElementById('chev-' + idx);
+    if (open !== null && open !== idx) {
+      document.getElementById('body-' + open).classList.remove('open');
+      document.getElementById('chev-' + open).classList.remove('open');
+    }
+    var opening = !body.classList.contains('open');
+    body.classList.toggle('open');
+    chev.classList.toggle('open');
+    open = opening ? idx : null;
+  }
+</script>
 </body></html>`);
 });
 
