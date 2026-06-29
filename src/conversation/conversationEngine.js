@@ -60,6 +60,11 @@ class ConversationEngine {
     this.turnId++;
     this.toolHandler.beginTurn(this.turnId);
 
+    // B04 fix: reset per-turn transfer flag. Set to true mid-turn when failure
+    // threshold is reached — forces tool_choice: 'none' on the next API iteration
+    // so the AI cannot call add_to_cart or search alternatives after 2 failures.
+    this._forceTransferThisTurn = false;
+
     // Detect pickup/delivery from user text — store on cart
     this._captureOrderType(userText);
 
@@ -68,9 +73,9 @@ class ConversationEngine {
       this._captureDeliveryAddress(userText);
     }
 
-    const response = await this._runToolLoop();
-    this.history.push({ role: 'assistant', content: response });
-    return { message: response };
+    const result = await this._runToolLoop();
+    this.history.push({ role: 'assistant', content: result.message });
+    return result;
   }
 
   // ─── TOOL CALLING LOOP ──────────────────────────────────────────────────────
@@ -79,6 +84,16 @@ class ConversationEngine {
     let iterations = 0;
     let searchCalledThisTurn = false;  // B01: track whether search_menu was called
     const currentTurnToolCalls = [];   // B04: log all tool calls for investigation
+    const turnToolLog = [];            // transcript: tool calls + results this turn
+    let promptTokens     = 0;          // accumulated across all loop iterations
+    let completionTokens = 0;
+
+    // Helper: wrap a string return into the standard result shape
+    const ret = (message) => ({
+      message,
+      toolCalls:  turnToolLog,
+      tokenUsage: { promptTokens, completionTokens },
+    });
 
     while (iterations < MAX_TOOL_ITERATIONS) {
       iterations++;
@@ -119,20 +134,52 @@ class ConversationEngine {
         persistentState.push({ role: 'system', content: stateNote });
       }
 
+      // B04 fix: when failure threshold hit this turn, force text-only response.
+      // Prevents the AI from calling add_to_cart or searching alternatives after
+      // 2 failed searches for the same item.
+      const transferMessages = this._forceTransferThisTurn ? [{
+        role: 'system',
+        content: '[REQUIRED: The customer has requested an unavailable item twice. You MUST offer to connect them with a human team member now. Do NOT call any tools. Do NOT suggest alternatives. Your response must be the transfer offer only.]',
+      }] : [];
+
       const res = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: this.systemPrompt },
           ...persistentState,
+          ...transferMessages,
           ...trimmedHistory,
         ],
         tools: TOOL_DEFINITIONS,
-        tool_choice: 'auto',
+        tool_choice: this._forceTransferThisTurn ? 'none' : 'auto',
         temperature: 0.2,
         max_tokens: 600,
       });
 
+      // Accumulate token usage across all loop iterations this turn
+      if (res.usage) {
+        promptTokens     += res.usage.prompt_tokens     || 0;
+        completionTokens += res.usage.completion_tokens || 0;
+      }
+
       const msg = res.choices[0].message;
+
+      // B04 Option 2 — Mechanism A guard:
+      // OpenAI occasionally returns a message with BOTH content (spoken text) AND tool_calls.
+      // If the content contains human-fallback language while tool_calls are also present,
+      // the tool_calls would fire and potentially add phantom items before we see the fallback text.
+      // Guard: when both are present and content contains fallback language, treat it as a
+      // final response only — skip the tool_calls entirely.
+      if (msg.tool_calls && msg.tool_calls.length > 0 && msg.content) {
+        const hasFallbackInContent = /connect you (with|to) someone|transfer you|let me get someone|speak with a (team member|person|human)/i.test(msg.content);
+        if (hasFallbackInContent) {
+          console.log('[B04] Mechanism A detected: LLM returned fallback text + tool_calls in same message. Skipping tool_calls.');
+          console.log('[B04] Tool calls that were suppressed:', JSON.stringify(msg.tool_calls.map(c => ({ name: c.function.name, args: c.function.arguments }))));
+          const b04Cart = this.toolHandler.cart.getActiveItems().map(i => `${i.name} x${i.quantity}`);
+          console.log('[B04] Cart at suppression point:', b04Cart.join(', ') || '(empty)');
+          return ret(msg.content);
+        }
+      }
 
       // No tool calls — this is the final spoken response
       if (!msg.tool_calls || msg.tool_calls.length === 0) {
@@ -157,7 +204,7 @@ class ConversationEngine {
           console.log('[B04] Cart state:', JSON.stringify(this.toolHandler._getCart()));
         }
 
-        return responseText;
+        return ret(responseText);
       }
 
       // Process tool calls and add results to history
@@ -175,7 +222,20 @@ class ConversationEngine {
         currentTurnToolCalls.push({ name: call.function.name, args });
 
         const result = this.toolHandler.execute(call.function.name, args);
+        turnToolLog.push({ name: call.function.name, args, result });
         this._trackFailures(call.function.name, args, result);
+
+        // B04 fix: wire the failure counter into code-level enforcement.
+        // If this search failed and the threshold is now reached, set the flag that
+        // forces tool_choice: 'none' on the next API iteration. The AI will be
+        // unable to call add_to_cart or search for alternatives — it can only output
+        // the transfer offer. Flag resets at the start of the next user turn.
+        if (call.function.name === 'search_menu' && !result.found && this.needsHumanFallback(args.query)) {
+          this._forceTransferThisTurn = true;
+          result.TRANSFER_REQUIRED = true;
+          result.transfer_instruction = 'REQUIRED: This item has been searched twice and is not on the menu. You MUST offer to connect the customer with a human now. Do NOT search for alternatives.';
+          console.log(`[B04] Transfer threshold reached for query "${args.query}" — forcing tool_choice: none next iteration`);
+        }
 
         // B13: when add_to_cart fails with MISSING_REQUIRED, check if the customer
         // mentioned special instructions earlier and remind the AI to include them on retry.

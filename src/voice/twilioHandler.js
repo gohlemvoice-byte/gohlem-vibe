@@ -61,15 +61,17 @@ function attach(server, app) {
           const { callSid, streamSid } = msg.start;
           session = {
             callSid, streamSid,
-            ws:          twilioWs,
-            engine:      new ConversationEngine(restaurantConfig),
-            dgConn:      null,
-            dgReady:     false,
-            state:       'init',
-            processing:  false,
-            startTime:   Date.now(),
-            transcript:  [],
-            lastHeardTs: null,
+            ws:               twilioWs,
+            engine:           new ConversationEngine(restaurantConfig),
+            dgConn:           null,
+            dgReady:          false,
+            state:            'init',
+            processing:       false,
+            startTime:        Date.now(),
+            transcript:       [],
+            lastHeardTs:      null,
+            promptTokens:     0,
+            completionTokens: 0,
           };
           sessions.set(callSid, session);
           log(callSid, `Stream started (${streamSid})`);
@@ -169,9 +171,14 @@ async function processUtterance(session, text) {
   session.lastHeardTs = Date.now();
   session.transcript.push({ role: 'customer', text, ts: Date.now() });
   try {
-    const result = await session.engine.chat(text);
-    const reply  = result.message || "I'm sorry, I didn't catch that. Could you repeat?";
-    await speak(session, reply);
+    const { message, toolCalls = [], tokenUsage = {} } = await session.engine.chat(text);
+    const reply = message || "I'm sorry, I didn't catch that. Could you repeat?";
+
+    // Accumulate token usage across all turns
+    session.promptTokens     += tokenUsage.promptTokens     || 0;
+    session.completionTokens += tokenUsage.completionTokens || 0;
+
+    await speak(session, reply, toolCalls, tokenUsage);
 
     const lower = reply.toLowerCase();
     const ended = lower.includes('goodbye') || lower.includes('take care') ||
@@ -185,11 +192,14 @@ async function processUtterance(session, text) {
 
 // ─── SPEAK ────────────────────────────────────────────────────────────────────
 
-async function speak(session, text) {
+async function speak(session, text, toolCalls = [], tokenUsage = {}) {
   if (session.state === 'done') return;
   session.state = 'speaking';
   const latencyMs = session.lastHeardTs ? Date.now() - session.lastHeardTs : null;
-  session.transcript.push({ role: 'ai', text, ts: Date.now(), latencyMs });
+  const aiEntry = { role: 'ai', text, ts: Date.now(), latencyMs };
+  if (toolCalls.length)        aiEntry.toolCalls = toolCalls;
+  if (tokenUsage.promptTokens) aiEntry.tokens    = tokenUsage;
+  session.transcript.push(aiEntry);
   session.lastHeardTs = null;
   log(session.callSid, `Speaking${latencyMs !== null ? ` [${latencyMs}ms]` : ''}: "${text.slice(0, 80)}"`);
 
@@ -245,14 +255,17 @@ function teardown(session, reason) {
   log(session.callSid, `Ended — ${reason} | ${duration}s | ${order.items.length} items | $${order.total.toFixed(2)}`);
 
   transcriptStore.save({
-    callSid:    session.callSid,
-    restaurant: session.engine.config.restaurantInfo.name,
-    startTime:  session.startTime,
+    callSid:          session.callSid,
+    restaurant:       session.engine.config.restaurantInfo.name,
+    startTime:        session.startTime,
     duration,
-    items:      order.items.length,
-    total:      order.total.toFixed(2),
-    transcript: session.transcript,
+    items:            order.items.length,
+    total:            order.total.toFixed(2),
+    transcript:       session.transcript,
     cartItems,
+    promptTokens:     session.promptTokens     || null,
+    completionTokens: session.completionTokens || null,
+    retellCostUsd:    null, // Twilio calls don't have Retell cost
   }).catch(err => log(session.callSid, `DB save failed: ${err.message}`));
 
   if (session.dgConn) {

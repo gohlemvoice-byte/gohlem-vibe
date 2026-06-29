@@ -104,35 +104,79 @@ app.get('/voice/transcripts', async (_req, res) => {
   try {
     const dbRows = await transcriptStore.getRecent(50);
     calls = dbRows.map(row => ({
-      callSid:    row.call_sid,
-      restaurant: row.restaurant,
-      startTime:  row.started_at,
-      duration:   row.duration_sec,
-      items:      row.item_count,
-      total:      Number(row.total_dollars).toFixed(2),
-      avgLatency: row.avg_latency_ms,
-      transcript: typeof row.transcript === 'string' ? JSON.parse(row.transcript) : row.transcript,
-      cartItems:  typeof row.cart_items === 'string' ? JSON.parse(row.cart_items) : (row.cart_items || []),
+      callSid:          row.call_sid,
+      restaurant:       row.restaurant,
+      startTime:        row.started_at,
+      duration:         row.duration_sec,
+      items:            row.item_count,
+      total:            Number(row.total_dollars).toFixed(2),
+      avgLatency:       row.avg_latency_ms,
+      transcript:       typeof row.transcript === 'string' ? JSON.parse(row.transcript) : row.transcript,
+      cartItems:        typeof row.cart_items === 'string' ? JSON.parse(row.cart_items) : (row.cart_items || []),
+      promptTokens:     row.prompt_tokens     ? Number(row.prompt_tokens)     : null,
+      completionTokens: row.completion_tokens ? Number(row.completion_tokens) : null,
+      retellCostUsd:    row.retell_cost_usd   ? Number(row.retell_cost_usd)   : null,
     }));
   } catch (err) {
     log(null, `Transcripts DB read failed, using memory: ${err.message}`);
     calls = [];
   }
 
+  function toolSummary(toolCalls) {
+    if (!toolCalls || !toolCalls.length) return '';
+    const pills = toolCalls.map(tc => {
+      const n = tc.name;
+      const r = tc.result || {};
+      let label = '';
+      if (n === 'search_menu') {
+        label = `🔍 search("${tc.args.query || ''}") → ${r.found ? (r.items && r.items[0] ? r.items[0].name : 'found') : 'not found'}`;
+      } else if (n === 'add_to_cart') {
+        label = r.success ? `🛒 add → ✓ ${r.name || ''}` : `🛒 add → ✗ ${r.error || ''}`;
+      } else if (n === 'update_cart_item') {
+        label = `✏️ update → ${r.success ? '✓' : '✗ ' + (r.error || '')}`;
+      } else if (n === 'remove_from_cart') {
+        label = `🗑 remove → ${r.success ? '✓' : '✗'}`;
+      } else if (n === 'get_cart') {
+        label = `📋 get_cart → ${r.items ? r.items.length + ' item(s)' : 'ok'}`;
+      } else {
+        label = `⚙️ ${n}`;
+      }
+      return `<span class="tool-pill">${label}</span>`;
+    }).join('');
+    return `<div class="tool-row">${pills}</div>`;
+  }
+
   function renderCall(call, idx) {
     const turns = (call.transcript || []).map(t => {
       const time    = new Date(t.ts).toLocaleTimeString('en-US', { hour12: false });
-      const latency = t.latencyMs != null
-        ? `<span class="lat">${t.latencyMs}ms</span>` : '';
+      const latency = t.latencyMs != null ? `<span class="lat">${t.latencyMs}ms</span>` : '';
+      const tokBadge = t.tokens
+        ? `<span class="tok">${t.tokens.promptTokens}+${t.tokens.completionTokens}tok</span>` : '';
+      const tools   = toolSummary(t.toolCalls);
       return t.role === 'customer'
         ? `<div class="turn customer"><span class="label">CALLER</span> <span class="time">${time}</span><p>${t.text}</p></div>`
-        : `<div class="turn ai"><span class="label">AI ${latency}</span> <span class="time">${time}</span><p>${t.text}</p></div>`;
+        : `<div class="turn ai"><span class="label">AI ${latency}${tokBadge}</span> <span class="time">${time}</span>${tools}<p>${t.text}</p></div>`;
     }).join('');
 
     const avg = call.avgLatency ?? (() => {
       const lats = (call.transcript || []).filter(t => t.role === 'ai' && t.latencyMs).map(t => t.latencyMs);
       return lats.length ? Math.round(lats.reduce((a, b) => a + b, 0) / lats.length) : null;
     })();
+
+    // LLM cost: GPT-4o-mini $0.150/1M input, $0.600/1M output
+    const llmCost = (call.promptTokens != null && call.completionTokens != null)
+      ? ((call.promptTokens / 1_000_000) * 0.150) + ((call.completionTokens / 1_000_000) * 0.600)
+      : null;
+    const totalTokens = (call.promptTokens || 0) + (call.completionTokens || 0);
+
+    const costHtml = (llmCost !== null || call.retellCostUsd !== null) ? `
+      <div class="cost-section">
+        <div class="cost-title">Cost Breakdown</div>
+        ${totalTokens ? `<div class="cost-row"><span>OpenAI tokens</span><span>${call.promptTokens?.toLocaleString()} in + ${call.completionTokens?.toLocaleString()} out = ${totalTokens.toLocaleString()} total</span></div>` : ''}
+        ${llmCost !== null ? `<div class="cost-row"><span>LLM cost (GPT-4o-mini)</span><span class="cost-val">$${llmCost.toFixed(5)}</span></div>` : ''}
+        ${call.retellCostUsd !== null ? `<div class="cost-row"><span>Retell platform cost</span><span class="cost-val">$${call.retellCostUsd.toFixed(4)}</span></div>` : ''}
+        ${(llmCost !== null && call.retellCostUsd !== null) ? `<div class="cost-row cost-total-row"><span>Total call cost</span><span class="cost-val">$${(llmCost + call.retellCostUsd).toFixed(4)}</span></div>` : ''}
+      </div>` : '';
 
     const cartHtml = (call.cartItems || []).length === 0
       ? '<div class="cart-empty">No items in cart</div>'
@@ -143,18 +187,22 @@ app.get('/voice/transcripts', async (_req, res) => {
         }).join('');
 
     const when = new Date(call.startTime).toLocaleString('en-US', { timeZone: 'America/New_York', hour12: false });
+    const costTag = llmCost !== null ? ` &nbsp;|&nbsp; <span class="cost-badge">LLM $${llmCost.toFixed(4)}</span>` : '';
+    const retellTag = call.retellCostUsd !== null ? ` <span class="cost-badge retell-badge">Retell $${call.retellCostUsd.toFixed(4)}</span>` : '';
     return `
       <div class="call" id="call-${idx}">
         <div class="call-header" onclick="toggle(${idx})">
           <span class="chevron" id="chev-${idx}">▶</span>
           📞 ${when} &nbsp;|&nbsp; ${call.duration}s &nbsp;|&nbsp;
           ${call.items} item(s) &nbsp;|&nbsp; $${call.total}
-          ${avg ? `&nbsp;|&nbsp; <strong>avg latency: ${avg}ms</strong>` : ''}
+          ${avg ? `&nbsp;|&nbsp; <strong>avg ${avg}ms</strong>` : ''}
           ${call.restaurant ? `&nbsp;|&nbsp; ${call.restaurant}` : ''}
+          ${costTag}${retellTag}
           <span class="sid">${call.callSid}</span>
         </div>
         <div class="call-body" id="body-${idx}">
           <div class="cart-section"><div class="cart-title">Cart</div>${cartHtml}<div class="cart-total">Total: $${call.total}</div></div>
+          ${costHtml}
           <div class="turns">${turns}</div>
         </div>
       </div>`;
@@ -165,7 +213,7 @@ app.get('/voice/transcripts', async (_req, res) => {
 <html><head><meta charset="utf-8">
 <title>Gohlem Call Transcripts</title>
 <style>
-  body { font-family: sans-serif; background: #0f0f0f; color: #eee; padding: 24px; max-width: 800px; margin: auto; }
+  body { font-family: sans-serif; background: #0f0f0f; color: #eee; padding: 24px; max-width: 860px; margin: auto; }
   h1 { font-size: 18px; color: #aaa; margin-bottom: 4px; }
   .sub { font-size: 12px; color: #444; margin-bottom: 24px; }
   .call { background: #1a1a1a; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
@@ -178,7 +226,7 @@ app.get('/voice/transcripts', async (_req, res) => {
   .call-body.open { display: block; }
   .sid { float: right; font-size: 11px; color: #444; }
   .turns { padding: 16px; }
-  .turn { margin-bottom: 12px; }
+  .turn { margin-bottom: 14px; }
   .turn p { margin: 4px 0 0 0; font-size: 15px; line-height: 1.5; }
   .turn.customer p { color: #fff; }
   .turn.ai p { color: #7dd3fc; }
@@ -187,6 +235,9 @@ app.get('/voice/transcripts', async (_req, res) => {
   .turn.ai .label { color: #3b82f6; }
   .time { font-size: 11px; color: #444; margin-left: 8px; }
   .lat { background: #f90; color: #000; border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: bold; margin-left: 4px; }
+  .tok { background: #1e3a5f; color: #7dd3fc; border-radius: 4px; padding: 1px 5px; font-size: 10px; margin-left: 4px; }
+  .tool-row { margin: 4px 0; display: flex; flex-wrap: wrap; gap: 4px; }
+  .tool-pill { font-size: 11px; background: #1a2a1a; color: #a3e635; border: 1px solid #2a3a2a; border-radius: 4px; padding: 2px 7px; }
   .empty { color: #444; text-align: center; padding: 60px; }
   .cart-section { background: #111; border-bottom: 1px solid #222; padding: 12px 16px; }
   .cart-title { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 8px; }
@@ -196,6 +247,13 @@ app.get('/voice/transcripts', async (_req, res) => {
   .cart-row .price { color: #fff; font-weight: bold; }
   .cart-total { font-size: 13px; color: #fff; font-weight: bold; margin-top: 8px; border-top: 1px solid #222; padding-top: 8px; }
   .cart-empty { font-size: 13px; color: #444; font-style: italic; }
+  .cost-section { background: #0d1a0d; border-bottom: 1px solid #1a2a1a; padding: 10px 16px; }
+  .cost-title { font-size: 11px; font-weight: bold; color: #3a5a3a; text-transform: uppercase; margin-bottom: 6px; }
+  .cost-row { font-size: 12px; color: #6b7280; display: flex; justify-content: space-between; padding: 2px 0; }
+  .cost-val { color: #a3e635; font-weight: bold; }
+  .cost-total-row { border-top: 1px solid #1a2a1a; margin-top: 4px; padding-top: 6px; color: #9ca3af; font-weight: bold; }
+  .cost-badge { font-size: 11px; color: #a3e635; }
+  .retell-badge { color: #f59e0b; margin-left: 4px; }
 </style>
 </head><body>
 <h1>Gohlem Call Transcripts</h1>

@@ -21,7 +21,7 @@ const SLUG_MAP = {
 
 console.log(`[Retell] Restaurant slugs: ${Object.keys(SLUG_MAP).join(', ')}`);
 
-// call_id → { engine, startTime, transcript, ended }
+// call_id → { engine, startTime, transcript, ended, promptTokens, completionTokens }
 const sessions = new Map();
 
 setInterval(() => {
@@ -72,6 +72,28 @@ function streamText(ws, responseId, text, endCall = false) {
   }
 }
 
+// Fetch actual cost from Retell API — requires RETELL_API_KEY in Railway env vars.
+// Returns cost in USD (e.g. 0.0480) or null if unavailable.
+async function fetchRetellCost(callId) {
+  const apiKey = process.env.RETELL_API_KEY;
+  if (!apiKey) return null;
+  try {
+    const res = await fetch(`https://api.retellai.com/v2/get-call/${callId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    // Try known field names from Retell's response schema
+    const cost = data.call_cost ?? data.cost_usd ?? data.cost ?? null;
+    if (cost != null) console.log(`[Retell:${callId.slice(-8)}] Retell call cost: $${cost}`);
+    else console.log(`[Retell:${callId.slice(-8)}] Retell cost fields: ${Object.keys(data).join(', ')}`);
+    return typeof cost === 'number' ? cost : null;
+  } catch (err) {
+    console.error(`[Retell] Cost fetch failed: ${err.message}`);
+    return null;
+  }
+}
+
 async function saveAndCleanup(callId, session) {
   if (session.ended) return;
   session.ended = true;
@@ -86,39 +108,50 @@ async function saveAndCleanup(callId, session) {
     lineTotal:           i.lineTotal,
   }));
 
-  console.log(`${tag(callId)} Ended — ${duration}s | ${order.items.length} items | $${order.total.toFixed(2)}`);
+  // GPT-4o-mini pricing: $0.150/1M input, $0.600/1M output
+  const llmCostUsd = ((session.promptTokens / 1_000_000) * 0.150) +
+                     ((session.completionTokens / 1_000_000) * 0.600);
+
+  console.log(
+    `${tag(callId)} Ended — ${duration}s | ${order.items.length} items | $${order.total.toFixed(2)} | ` +
+    `tokens: ${session.promptTokens}in/${session.completionTokens}out | LLM cost: $${llmCostUsd.toFixed(5)}`
+  );
+
+  const retellCostUsd = await fetchRetellCost(callId);
 
   transcriptStore.save({
-    callSid:    callId,
-    restaurant: session.engine.config.restaurantInfo.name,
-    startTime:  session.startTime,
+    callSid:          callId,
+    restaurant:       session.engine.config.restaurantInfo.name,
+    startTime:        session.startTime,
     duration,
-    items:      order.items.length,
-    total:      order.total.toFixed(2),
-    transcript: session.transcript,
+    items:            order.items.length,
+    total:            order.total.toFixed(2),
+    transcript:       session.transcript,
     cartItems,
+    promptTokens:     session.promptTokens     || null,
+    completionTokens: session.completionTokens || null,
+    retellCostUsd,
   }).catch(err => console.error(`${tag(callId)} DB save failed: ${err.message}`));
 
   sessions.delete(callId);
 }
 
 // slug comes from the URL path: /retell/chat/{slug}/{call_id}
-// voiceServer.js extracts both and passes them here.
 async function handleConnection(ws, callId, slug) {
   const config = getConfig(slug);
   console.log(`${tag(callId)} Connected — slug="${slug}" → restaurant="${config.restaurantInfo.name}"`);
 
   const session = {
-    engine:     new ConversationEngine(config),
-    startTime:  Date.now(),
-    transcript: [],
-    ended:      false,
+    engine:           new ConversationEngine(config),
+    startTime:        Date.now(),
+    transcript:       [],
+    ended:            false,
+    promptTokens:     0,
+    completionTokens: 0,
   };
   sessions.set(callId, session);
 
-  // Send greeting immediately on connection.
-  // Retell v2 does NOT send call_started — it goes straight to update_only/response_required.
-  // The greeting must be pushed as soon as the WebSocket opens.
+  // Send greeting immediately — Retell v2 doesn't fire call_started first.
   try {
     const { message } = await session.engine.open();
     session.transcript.push({ role: 'ai', text: message, ts: Date.now(), latencyMs: null });
@@ -134,14 +167,14 @@ async function handleConnection(ws, callId, slug) {
 
     const { interaction_type, response_id = 0, transcript: rtTranscript = [] } = data;
 
-    // update_only = Retell sending live transcript updates, no response needed
+    // update_only = Retell live transcript updates — no response needed
     if (interaction_type === 'update_only') return;
 
     console.log(`${tag(callId)} ${interaction_type}`);
 
     try {
       if (interaction_type === 'call_started' || interaction_type === 'call_details') {
-        // Already greeted on connection — nothing to do here.
+        // Already greeted on connection — nothing to do.
         return;
 
       } else if (interaction_type === 'response_required' || interaction_type === 'reminder_required') {
@@ -154,14 +187,26 @@ async function handleConnection(ws, callId, slug) {
         const userTs = Date.now();
         session.transcript.push({ role: 'customer', text: userText, ts: userTs });
 
-        const { message } = await session.engine.chat(userText);
+        const { message, toolCalls = [], tokenUsage = {} } = await session.engine.chat(userText);
 
         const aiTs    = Date.now();
         const latency = aiTs - userTs;
-        session.transcript.push({ role: 'ai', text: message, ts: aiTs, latencyMs: latency });
 
-        console.log(`${tag(callId)} Heard: "${userText}"`);
-        console.log(`${tag(callId)} Speaking [${latency}ms]: "${message.slice(0, 80)}"`);
+        // Accumulate token usage across all turns
+        session.promptTokens     += tokenUsage.promptTokens     || 0;
+        session.completionTokens += tokenUsage.completionTokens || 0;
+
+        // Store enriched AI turn in transcript
+        const aiEntry = { role: 'ai', text: message, ts: aiTs, latencyMs: latency };
+        if (toolCalls.length)             aiEntry.toolCalls = toolCalls;
+        if (tokenUsage.promptTokens)      aiEntry.tokens    = tokenUsage;
+        session.transcript.push(aiEntry);
+
+        console.log(
+          `${tag(callId)} Heard: "${userText}" | ` +
+          `[${latency}ms] ${tokenUsage.promptTokens || 0}in/${tokenUsage.completionTokens || 0}out tokens`
+        );
+        console.log(`${tag(callId)} Speaking: "${message.slice(0, 80)}"`);
 
         const endCall = isEndOfCall(message);
         streamText(ws, response_id, message, endCall);
