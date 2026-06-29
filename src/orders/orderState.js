@@ -34,6 +34,25 @@ class OrderCart {
   // ─── MUTATIONS ────────────────────────────────────────────────────────────
 
   addItem(menuItem, modifiers = [], quantity = 1, specialInstructions = '') {
+    // Merge into an existing identical cart item rather than creating a duplicate entry.
+    // Only merges when neither the new add nor the existing item has special instructions,
+    // since special instructions differentiate otherwise identical items (e.g. "cut into 16 slices").
+    if (!specialInstructions) {
+      const newModIds = new Set(modifiers.map(m => m.id));
+      const existing = this.items.find(item =>
+        item.status === 'confirmed' &&
+        item.menuItemId === menuItem.id &&
+        !item.specialInstructions &&
+        item.modifiers.length === modifiers.length &&
+        item.modifiers.every(m => newModIds.has(m.id))
+      );
+      if (existing) {
+        existing.quantity += quantity;
+        existing.lineTotal = this._calcLineTotal(existing.unitPrice, existing.modifiers, existing.quantity);
+        return existing.cartItemId;
+      }
+    }
+
     const cartItemId = this._generateId();
     this.items.push({
       cartItemId,
