@@ -83,12 +83,14 @@ class ConversationEngine {
     while (iterations < MAX_TOOL_ITERATIONS) {
       iterations++;
 
-      // Keep last 12 messages to limit token usage per API call.
+      // Keep last 28 messages to limit token usage per API call.
+      // Tool calls add 2-3 messages per turn, so 12 was stripping too much context
+      // and causing the AI to lose conversation state mid-call.
       // Never start in the middle of a tool exchange: drop leading messages until
       // we reach a clean boundary (user message, or plain assistant message).
       // A "tool" message without its preceding assistant+tool_calls is orphaned
       // and will cause a 400 from the API.
-      let trimmedHistory = this.history.slice(-12);
+      let trimmedHistory = this.history.slice(-28);
       while (trimmedHistory.length > 0) {
         const first = trimmedHistory[0];
         if (first.role === 'user') break;
@@ -105,6 +107,13 @@ class ConversationEngine {
         let stateNote = `[Order state: customer has already confirmed "${this.cart.orderType}" — do NOT ask about pickup or delivery again.`;
         if (this.cart.deliveryAddress) {
           stateNote += ` Delivery address already captured: "${this.cart.deliveryAddress}".`;
+        }
+        const order = this.cart.getOrder();
+        if (order.items.length > 0) {
+          const itemSummary = order.items
+            .map((it, i) => `${i + 1}. ${it.quantity}x ${it.name}${it.modifiers.length ? ' (' + it.modifiers.map(m => m.name).join(', ') + ')' : ''}`)
+            .join('; ');
+          stateNote += ` Cart so far (${order.items.length} item(s)): ${itemSummary}.`;
         }
         stateNote += ']';
         persistentState.push({ role: 'system', content: stateNote });
