@@ -6,7 +6,8 @@
 // The absolute floor prevents the guard from blocking regular menu items
 // (pizzas, entrees) when the cart contains mostly cheap drinks.
 const PRICE_ANOMALY_MULTIPLIER = 4;
-const PRICE_ANOMALY_FLOOR = 28; // items under $28 never trigger this guard
+const PRICE_ANOMALY_FLOOR = 28;        // items under $28 never trigger this guard
+const PRICE_ANOMALY_EMPTY_CART_FLOOR = 45; // threshold when cart is empty (no average to compare against)
 
 // Catering item IDs. These require 24-48 hour advance notice.
 // Populated from restaurantConfig.cateringItems.
@@ -245,13 +246,23 @@ class ToolHandler {
       };
     }
 
-    // Guard 5: price anomaly — block silent addition of bulk/party items
+    // Guard 5: price anomaly — block silent addition of bulk/party items.
+    // When cart has items: block if price > 4× the average.
+    // When cart is empty: block if price > PRICE_ANOMALY_EMPTY_CART_FLOOR.
+    // Previously the guard was skipped entirely on empty carts (avgCartPrice > 0 was false),
+    // allowing any item — including party trays — to be added as the first item with no confirmation.
     const avgCartPrice = this._getAvgCartItemPrice();
-    if (avgCartPrice > 0 && menuItem.base_price >= PRICE_ANOMALY_FLOOR && menuItem.base_price > avgCartPrice * PRICE_ANOMALY_MULTIPLIER) {
+    const priceThreshold = avgCartPrice > 0
+      ? avgCartPrice * PRICE_ANOMALY_MULTIPLIER
+      : PRICE_ANOMALY_EMPTY_CART_FLOOR;
+    if (menuItem.base_price >= PRICE_ANOMALY_FLOOR && menuItem.base_price > priceThreshold) {
+      const context = avgCartPrice > 0
+        ? `higher than your average cart item ($${avgCartPrice.toFixed(2)})`
+        : `high for a first item`;
       return {
         success: false,
         error: 'PRICE_ANOMALY',
-        message: `${menuItem.name} costs $${menuItem.base_price.toFixed(2)}, which is significantly higher than your average cart item ($${avgCartPrice.toFixed(2)}).`,
+        message: `${menuItem.name} costs $${menuItem.base_price.toFixed(2)}, which is significantly ${context}.`,
         prompt: `Confirm with the customer: "Just to confirm, you'd like to add ${menuItem.name} at $${menuItem.base_price.toFixed(2)}?"`,
       };
     }
