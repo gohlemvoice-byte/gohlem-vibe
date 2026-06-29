@@ -334,14 +334,18 @@ if (VOICE_LAYER === 'twilio') {
   });
 
   retellWss.on('connection', (ws, req) => {
-    const parts  = new URL(req.url, 'http://localhost').pathname.split('/').filter(Boolean);
-    const callId = parts[parts.length - 1]; // last segment is the call_id
-    retellHandler.handleConnection(ws, callId);
+    const parts = new URL(req.url, 'http://localhost').pathname.split('/').filter(Boolean);
+    // URL formats:
+    //   /retell/chat/{slug}/{call_id}  ← new (each agent has its own slug URL)
+    //   /retell/chat/{call_id}         ← old (no slug, defaults to Tony's)
+    const callId = parts[parts.length - 1];
+    const slug   = parts.length >= 4 ? parts[2] : null;
+    retellHandler.handleConnection(ws, callId, slug);
   });
 
   server.listen(PORT, () => {
     log(null, `Gohlem.ai voice server on port ${PORT}`);
-    log(null, `Voice layer: Retell  |  WebSocket: /retell/chat/{call_id}`);
+    log(null, `Voice layer: Retell  |  WebSocket: /retell/chat/{slug}/{call_id}`);
     log(null, `Browser test: GET /voice/test  |  Transcripts: GET /voice/transcripts`);
     log(null, `To switch to Twilio: set VOICE_LAYER=twilio in Railway`);
   });

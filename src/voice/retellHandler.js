@@ -7,28 +7,19 @@ const hotBagelsConfig    = require('../config/hotBagelsConfig');
 const sushiSpotConfig    = require('../config/sushiSpotConfig');
 const pizzaPlaceConfig   = require('../config/pizzaPlaceConfig');
 
-// Built at startup — log which env vars are present so we can verify in Deploy Logs
-function buildAgentMap() {
-  const map = {};
-  const entries = [
-    { key: 'RETELL_AGENT_TONYS',     config: restaurantConfig  },
-    { key: 'RETELL_AGENT_HOTBAGELS', config: hotBagelsConfig   },
-    { key: 'RETELL_AGENT_SUSHI',     config: sushiSpotConfig   },
-    { key: 'RETELL_AGENT_PIZZA',     config: pizzaPlaceConfig  },
-  ];
-  for (const { key, config } of entries) {
-    const id = process.env[key];
-    if (id) {
-      map[id] = config;
-      console.log(`[Retell] ${key} → ${config.restaurantInfo.name} (id: ...${id.slice(-6)})`);
-    } else {
-      console.log(`[Retell] ${key} not set — calls from this agent will fall back to Tony's`);
-    }
-  }
-  return map;
-}
+// Route by URL slug — each Retell agent has its own Custom LLM URL:
+//   https://server/retell/chat/tonys     → Tony's
+//   https://server/retell/chat/hotbagels → Hot Bagels
+//   https://server/retell/chat/sushi     → That Sushi Spot
+//   https://server/retell/chat/pizza     → The Pizza Place
+const SLUG_MAP = {
+  'tonys':     restaurantConfig,
+  'hotbagels': hotBagelsConfig,
+  'sushi':     sushiSpotConfig,
+  'pizza':     pizzaPlaceConfig,
+};
 
-const AGENT_RESTAURANT_MAP = buildAgentMap();
+console.log(`[Retell] Restaurant slugs: ${Object.keys(SLUG_MAP).join(', ')}`);
 
 // call_id → { engine, startTime, transcript, ended }
 const sessions = new Map();
@@ -40,8 +31,10 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
-function getConfig(agentId) {
-  return (agentId && AGENT_RESTAURANT_MAP[agentId]) || restaurantConfig;
+function getConfig(slug) {
+  const config = SLUG_MAP[slug];
+  if (!config) console.log(`[Retell] Unknown slug "${slug}" — defaulting to Tony's`);
+  return config || restaurantConfig;
 }
 
 function lastUserMessage(transcript) {
@@ -83,8 +76,8 @@ async function saveAndCleanup(callId, session) {
   if (session.ended) return;
   session.ended = true;
 
-  const duration = ((Date.now() - session.startTime) / 1000).toFixed(1);
-  const order    = session.engine.cart.getOrder();
+  const duration  = ((Date.now() - session.startTime) / 1000).toFixed(1);
+  const order     = session.engine.cart.getOrder();
   const cartItems = order.items.map(i => ({
     name:                i.name,
     quantity:            i.quantity,
@@ -109,69 +102,49 @@ async function saveAndCleanup(callId, session) {
   sessions.delete(callId);
 }
 
-async function handleConnection(ws, callId) {
-  console.log(`${tag(callId)} WebSocket connected`);
-  let session  = null;
-  let firstMsg = true;
+// slug comes from the URL path: /retell/chat/{slug}/{call_id}
+// voiceServer.js extracts both and passes them here.
+async function handleConnection(ws, callId, slug) {
+  const config = getConfig(slug);
+  console.log(`${tag(callId)} Connected — slug="${slug}" → restaurant="${config.restaurantInfo.name}"`);
+
+  const session = {
+    engine:     new ConversationEngine(config),
+    startTime:  Date.now(),
+    transcript: [],
+    ended:      false,
+  };
+  sessions.set(callId, session);
+
+  // Send greeting immediately on connection.
+  // Retell v2 does NOT send call_started — it goes straight to update_only/response_required.
+  // The greeting must be pushed as soon as the WebSocket opens.
+  try {
+    const { message } = await session.engine.open();
+    session.transcript.push({ role: 'ai', text: message, ts: Date.now(), latencyMs: null });
+    console.log(`${tag(callId)} Greeting: "${message.slice(0, 80)}"`);
+    streamText(ws, 0, message, false);
+  } catch (err) {
+    console.error(`${tag(callId)} Greeting error: ${err.message}`);
+  }
 
   ws.on('message', async (raw) => {
     let data;
     try { data = JSON.parse(raw); } catch { return; }
 
-    const { interaction_type, response_id = 0, transcript: rtTranscript = [], call = {} } = data;
+    const { interaction_type, response_id = 0, transcript: rtTranscript = [] } = data;
 
-    // On the very first message, log the full call object so we can see exactly
-    // what Retell sends — this is the only way to verify the agent_id field name.
-    if (firstMsg) {
-      firstMsg = false;
-      console.log(`${tag(callId)} First message type="${interaction_type}" call=${JSON.stringify(call)}`);
-    }
-
-    // agent_id may arrive in call_details (before call_started) or in call_started itself.
-    // Read it from whichever message has it.
-    const agentId = call.agent_id || call.agentId;
+    // update_only = Retell sending live transcript updates, no response needed
+    if (interaction_type === 'update_only') return;
 
     console.log(`${tag(callId)} ${interaction_type}`);
 
     try {
-      // ── CALL DETAILS (sent by some Retell versions before call_started) ─────────
-      if (interaction_type === 'call_details') {
-        // Just capture agent_id for routing — no response expected or needed.
-        const config = getConfig(agentId);
-        console.log(`${tag(callId)} call_details: agent_id="${agentId}" → restaurant="${config.restaurantInfo.name}"`);
+      if (interaction_type === 'call_started' || interaction_type === 'call_details') {
+        // Already greeted on connection — nothing to do here.
+        return;
 
-      // ── CALL STARTED ──────────────────────────────────────────────────────────
-      } else if (interaction_type === 'call_started') {
-        const config = getConfig(agentId);
-        console.log(`${tag(callId)} agent_id="${agentId}" → restaurant="${config.restaurantInfo.name}"`);
-        session = {
-          engine:     new ConversationEngine(config),
-          startTime:  Date.now(),
-          transcript: [],
-          ended:      false,
-        };
-        sessions.set(callId, session);
-
-        const { message } = await session.engine.open();
-        session.transcript.push({ role: 'ai', text: message, ts: Date.now(), latencyMs: null });
-        console.log(`${tag(callId)} Greeting: "${message.slice(0, 80)}"`);
-        streamText(ws, response_id, message, false);
-
-      // ── CUSTOMER SPOKE ────────────────────────────────────────────────────────
       } else if (interaction_type === 'response_required' || interaction_type === 'reminder_required') {
-        if (!session) {
-          console.log(`${tag(callId)} Session missing — rebuilding`);
-          const config = getConfig(agentId);
-          session = {
-            engine:     new ConversationEngine(config),
-            startTime:  Date.now(),
-            transcript: [],
-            ended:      false,
-          };
-          sessions.set(callId, session);
-          await session.engine.open();
-        }
-
         const userText = lastUserMessage(rtTranscript);
         if (!userText) {
           wsSend(ws, response_id, "I didn't catch that. Could you repeat?", true, false);
@@ -194,19 +167,17 @@ async function handleConnection(ws, callId) {
         streamText(ws, response_id, message, endCall);
         if (endCall) await saveAndCleanup(callId, session);
 
-      // ── CALL ENDED ────────────────────────────────────────────────────────────
       } else if (interaction_type === 'call_ended') {
-        if (session) await saveAndCleanup(callId, session);
+        await saveAndCleanup(callId, session);
 
-      // ── UNKNOWN — log but do not respond ─────────────────────────────────────
       } else {
-        console.log(`${tag(callId)} Unhandled interaction_type="${interaction_type}"`);
+        console.log(`${tag(callId)} Unhandled: "${interaction_type}"`);
       }
 
     } catch (err) {
       console.error(`${tag(callId)} Error: ${err.message}`);
       wsSend(ws, response_id, "I'm having some trouble. Let me get someone to help you.", true, true);
-      if (session) await saveAndCleanup(callId, session);
+      await saveAndCleanup(callId, session);
     }
   });
 
