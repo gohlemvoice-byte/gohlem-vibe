@@ -7,12 +7,28 @@ const hotBagelsConfig    = require('../config/hotBagelsConfig');
 const sushiSpotConfig    = require('../config/sushiSpotConfig');
 const pizzaPlaceConfig   = require('../config/pizzaPlaceConfig');
 
-const AGENT_RESTAURANT_MAP = {
-  [process.env.RETELL_AGENT_TONYS]:     restaurantConfig,
-  [process.env.RETELL_AGENT_HOTBAGELS]: hotBagelsConfig,
-  [process.env.RETELL_AGENT_SUSHI]:     sushiSpotConfig,
-  [process.env.RETELL_AGENT_PIZZA]:     pizzaPlaceConfig,
-};
+// Built at startup — log which env vars are present so we can verify in Deploy Logs
+function buildAgentMap() {
+  const map = {};
+  const entries = [
+    { key: 'RETELL_AGENT_TONYS',     config: restaurantConfig  },
+    { key: 'RETELL_AGENT_HOTBAGELS', config: hotBagelsConfig   },
+    { key: 'RETELL_AGENT_SUSHI',     config: sushiSpotConfig   },
+    { key: 'RETELL_AGENT_PIZZA',     config: pizzaPlaceConfig  },
+  ];
+  for (const { key, config } of entries) {
+    const id = process.env[key];
+    if (id) {
+      map[id] = config;
+      console.log(`[Retell] ${key} → ${config.restaurantInfo.name} (id: ...${id.slice(-6)})`);
+    } else {
+      console.log(`[Retell] ${key} not set — calls from this agent will fall back to Tony's`);
+    }
+  }
+  return map;
+}
+
+const AGENT_RESTAURANT_MAP = buildAgentMap();
 
 // call_id → { engine, startTime, transcript, ended }
 const sessions = new Map();
@@ -45,8 +61,6 @@ function tag(callId) {
   return `[${new Date().toISOString()}] [Retell:${callId.slice(-8)}]`;
 }
 
-// Retell WebSocket format: send JSON objects back on the same WS connection.
-// ws.readyState 1 = OPEN
 function wsSend(ws, responseId, content, contentComplete, endCall = false) {
   if (ws.readyState !== 1) return;
   ws.send(JSON.stringify({
@@ -57,8 +71,6 @@ function wsSend(ws, responseId, content, contentComplete, endCall = false) {
   }));
 }
 
-// Stream sentence-by-sentence so Retell's TTS starts playing the first sentence
-// while remaining sentences are still being sent.
 function streamText(ws, responseId, text, endCall = false) {
   const sentences = text.split(/(?<=[.!?])\s+/);
   for (let i = 0; i < sentences.length; i++) {
@@ -97,25 +109,39 @@ async function saveAndCleanup(callId, session) {
   sessions.delete(callId);
 }
 
-// Called by voiceServer.js once per WebSocket connection from Retell.
-// callId comes from the URL path: /retell/chat/{call_id}
 async function handleConnection(ws, callId) {
   console.log(`${tag(callId)} WebSocket connected`);
-  let session = null;
+  let session  = null;
+  let firstMsg = true;
 
   ws.on('message', async (raw) => {
     let data;
     try { data = JSON.parse(raw); } catch { return; }
 
-    // Retell sends: { interaction_type, response_id, call: { call_id, agent_id, ... }, transcript: [...] }
     const { interaction_type, response_id = 0, transcript: rtTranscript = [], call = {} } = data;
-    const agentId = call.agent_id;
+
+    // On the very first message, log the full call object so we can see exactly
+    // what Retell sends — this is the only way to verify the agent_id field name.
+    if (firstMsg) {
+      firstMsg = false;
+      console.log(`${tag(callId)} First message type="${interaction_type}" call=${JSON.stringify(call)}`);
+    }
+
+    // agent_id may arrive in call_details (before call_started) or in call_started itself.
+    // Read it from whichever message has it.
+    const agentId = call.agent_id || call.agentId;
 
     console.log(`${tag(callId)} ${interaction_type}`);
 
     try {
+      // ── CALL DETAILS (sent by some Retell versions before call_started) ─────────
+      if (interaction_type === 'call_details') {
+        // Just capture agent_id for routing — no response expected or needed.
+        const config = getConfig(agentId);
+        console.log(`${tag(callId)} call_details: agent_id="${agentId}" → restaurant="${config.restaurantInfo.name}"`);
+
       // ── CALL STARTED ──────────────────────────────────────────────────────────
-      if (interaction_type === 'call_started') {
+      } else if (interaction_type === 'call_started') {
         const config = getConfig(agentId);
         console.log(`${tag(callId)} agent_id="${agentId}" → restaurant="${config.restaurantInfo.name}"`);
         session = {
@@ -133,7 +159,6 @@ async function handleConnection(ws, callId) {
 
       // ── CUSTOMER SPOKE ────────────────────────────────────────────────────────
       } else if (interaction_type === 'response_required' || interaction_type === 'reminder_required') {
-        // Session missing (server restarted mid-call) — rebuild
         if (!session) {
           console.log(`${tag(callId)} Session missing — rebuilding`);
           const config = getConfig(agentId);
@@ -173,8 +198,9 @@ async function handleConnection(ws, callId) {
       } else if (interaction_type === 'call_ended') {
         if (session) await saveAndCleanup(callId, session);
 
+      // ── UNKNOWN — log but do not respond ─────────────────────────────────────
       } else {
-        wsSend(ws, response_id, '', true, false);
+        console.log(`${tag(callId)} Unhandled interaction_type="${interaction_type}"`);
       }
 
     } catch (err) {
