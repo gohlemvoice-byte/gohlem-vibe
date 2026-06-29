@@ -22,18 +22,9 @@ module.exports = {
     schmear = cream cheese
     lox = smoked salmon
     nova = smoked salmon
-    everything = everything bagel
-    sesame = sesame bagel
-    plain = plain bagel
-    whole wheat = whole wheat bagel
-    pumpernickel = pumpernickel bagel
-    egg = egg bagel
-    onion = onion bagel
-    garlic = garlic bagel
-    rye = rye bread
-    bourekas = bourekas (savory pastry)
     barakas = bourekas
-    tofu = tofu scramble
+    borrekos = bourekas
+    burikos = bourekas
   `,
 
   faqKnowledgeBase: `
