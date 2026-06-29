@@ -83,6 +83,15 @@ app.get('/health', (_req, res) => {
   });
 });
 
+// ─── TWILIO FALLBACK (works regardless of voice layer) ───────────────────────
+// Twilio calls this if the primary webhook fails. Always returns valid TwiML.
+app.post('/voice/fallback', (req, res) => {
+  const { twiml: TwilioTwiml } = require('twilio');
+  const twiml = new TwilioTwiml.VoiceResponse();
+  twiml.say({ voice: 'alice' }, 'We are sorry, we are experiencing technical difficulties. Please call us back in a few minutes. Thank you.');
+  res.type('text/xml').send(twiml.toString());
+});
+
 // ─── BROWSER VOICE TEST ──────────────────────────────────────────────────────
 
 app.get('/voice/test', (_req, res) => {
