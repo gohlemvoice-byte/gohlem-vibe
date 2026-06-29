@@ -34,6 +34,8 @@ const deepgramClient = createClient(DG_KEY);
 const sessions = new Map();
 // sessionId → browser test session  { engine, lastActivity }
 const browserSessions = new Map();
+// last 30 completed call transcripts (in-memory, newest first)
+const callHistory = [];
 
 // Purge browser sessions idle for more than 30 minutes
 setInterval(() => {
@@ -114,6 +116,65 @@ app.post('/voice/fallback', (req, res) => {
 
 app.get('/voice/test', (_req, res) => {
   res.sendFile(path.join(__dirname, '../dashboard/voiceTest.html'));
+});
+
+// Clean transcript viewer for real phone calls
+app.get('/voice/transcripts', (_req, res) => {
+  const rows = callHistory.map(call => {
+    const turns = call.transcript.map(t => {
+      const time = new Date(t.ts).toLocaleTimeString('en-US', { hour12: false });
+      const latency = t.latencyMs !== null && t.latencyMs !== undefined
+        ? `<span class="lat">${t.latencyMs}ms</span>` : '';
+      const bubble = t.role === 'customer'
+        ? `<div class="turn customer"><span class="label">CALLER</span> <span class="time">${time}</span><p>${t.text}</p></div>`
+        : `<div class="turn ai"><span class="label">AI ${latency}</span> <span class="time">${time}</span><p>${t.text}</p></div>`;
+      return bubble;
+    }).join('');
+
+    const avgLatency = call.transcript
+      .filter(t => t.role === 'ai' && t.latencyMs)
+      .map(t => t.latencyMs);
+    const avg = avgLatency.length
+      ? Math.round(avgLatency.reduce((a, b) => a + b, 0) / avgLatency.length) : null;
+
+    return `
+      <div class="call">
+        <div class="call-header">
+          📞 ${call.startTime} &nbsp;|&nbsp; ${call.duration}s &nbsp;|&nbsp;
+          ${call.items} item(s) &nbsp;|&nbsp; $${call.total}
+          ${avg ? `&nbsp;|&nbsp; <strong>avg latency: ${avg}ms</strong>` : ''}
+          <span class="sid">${call.callSid}</span>
+        </div>
+        <div class="turns">${turns}</div>
+      </div>`;
+  }).join('');
+
+  res.send(`<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Gohlem Call Transcripts</title>
+<style>
+  body { font-family: sans-serif; background: #0f0f0f; color: #eee; padding: 24px; max-width: 800px; margin: auto; }
+  h1 { font-size: 18px; color: #aaa; margin-bottom: 24px; }
+  .call { background: #1a1a1a; border-radius: 10px; margin-bottom: 28px; overflow: hidden; }
+  .call-header { background: #222; padding: 10px 16px; font-size: 13px; color: #888; }
+  .call-header strong { color: #f90; }
+  .sid { float: right; font-size: 11px; color: #444; }
+  .turns { padding: 16px; }
+  .turn { margin-bottom: 12px; }
+  .turn p { margin: 4px 0 0 0; font-size: 15px; line-height: 1.5; }
+  .turn.customer p { color: #fff; }
+  .turn.ai p { color: #7dd3fc; }
+  .label { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #555; }
+  .turn.customer .label { color: #888; }
+  .turn.ai .label { color: #3b82f6; }
+  .time { font-size: 11px; color: #444; margin-left: 8px; }
+  .lat { background: #f90; color: #000; border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: bold; margin-left: 4px; }
+  .empty { color: #444; text-align: center; padding: 60px; }
+</style>
+</head><body>
+<h1>Gohlem Call Transcripts — last ${callHistory.length} call(s)</h1>
+${callHistory.length === 0 ? '<div class="empty">No calls yet. Make a call to +19728458717 and refresh.</div>' : rows}
+</body></html>`);
 });
 
 // Open a new browser session and return the greeting.
@@ -233,6 +294,8 @@ wss.on('connection', (twilioWs) => {
           state: 'init', // init | greeting | speaking | listening | processing | done
           processing: false, // guard against concurrent transcript events
           startTime: Date.now(),
+          transcript: [],      // { role, text, ts, latencyMs? }
+          lastHeardTs: null,   // timestamp when customer finished speaking
         };
         sessions.set(callSid, session);
         log(callSid, `Stream started (${streamSid})`);
@@ -344,6 +407,8 @@ function startListening(session) {
 
 async function processUtterance(session, text) {
   if (session.state === 'done') return;
+  session.lastHeardTs = Date.now();
+  session.transcript.push({ role: 'customer', text, ts: Date.now() });
   try {
     const result = await session.engine.chat(text);
     const reply = result.message || "I'm sorry, I didn't catch that. Could you repeat?";
@@ -369,7 +434,10 @@ async function processUtterance(session, text) {
 async function speak(session, text) {
   if (session.state === 'done') return;
   session.state = 'speaking';
-  log(session.callSid, `Speaking: "${text.slice(0, 80)}${text.length > 80 ? '…' : ''}"`);
+  const latencyMs = session.lastHeardTs ? Date.now() - session.lastHeardTs : null;
+  session.transcript.push({ role: 'ai', text, ts: Date.now(), latencyMs });
+  session.lastHeardTs = null;
+  log(session.callSid, `Speaking${latencyMs !== null ? ` [${latencyMs}ms latency]` : ''}: "${text.slice(0, 80)}${text.length > 80 ? '…' : ''}"`);
 
   try {
     const res = await fetch(
@@ -428,6 +496,17 @@ function teardown(session, reason) {
   log(session.callSid, `Ended — ${reason}`);
   log(session.callSid, `Duration: ${duration}s | Items: ${order.items.length} | Total: $${order.total.toFixed(2)}`);
   log(session.callSid, `Summary: ${session.engine.cart.getSummary()}`);
+
+  // Save to call history for the transcripts page
+  callHistory.unshift({
+    callSid: session.callSid,
+    startTime: new Date(session.startTime).toISOString(),
+    duration,
+    items: order.items.length,
+    total: order.total.toFixed(2),
+    transcript: session.transcript,
+  });
+  if (callHistory.length > 30) callHistory.pop();
 
   if (session.dgConn) {
     try { session.dgConn.requestClose(); } catch {}
