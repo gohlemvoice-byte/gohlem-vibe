@@ -103,6 +103,7 @@ app.get('/voice/transcripts', async (_req, res) => {
       total:      Number(row.total_dollars).toFixed(2),
       avgLatency: row.avg_latency_ms,
       transcript: typeof row.transcript === 'string' ? JSON.parse(row.transcript) : row.transcript,
+      cartItems:  typeof row.cart_items === 'string' ? JSON.parse(row.cart_items) : (row.cart_items || []),
     }));
   } catch (err) {
     log(null, `Transcripts DB read failed, using memory: ${err.message}`);
@@ -124,6 +125,14 @@ app.get('/voice/transcripts', async (_req, res) => {
       return lats.length ? Math.round(lats.reduce((a, b) => a + b, 0) / lats.length) : null;
     })();
 
+    const cartHtml = (call.cartItems || []).length === 0
+      ? '<div class="cart-empty">No items in cart</div>'
+      : (call.cartItems || []).map(i => {
+          const mods = i.modifiers && i.modifiers.length ? ` <span class="mods">(${i.modifiers.join(', ')})</span>` : '';
+          const note = i.specialInstructions ? ` <span class="note">— ${i.specialInstructions}</span>` : '';
+          return `<div class="cart-row">${i.quantity}× ${i.name}${mods}${note} <span class="price">$${Number(i.lineTotal).toFixed(2)}</span></div>`;
+        }).join('');
+
     const when = new Date(call.startTime).toLocaleString('en-US', { timeZone: 'America/New_York', hour12: false });
     return `
       <div class="call">
@@ -134,6 +143,7 @@ app.get('/voice/transcripts', async (_req, res) => {
           ${call.restaurant ? `&nbsp;|&nbsp; ${call.restaurant}` : ''}
           <span class="sid">${call.callSid}</span>
         </div>
+        <div class="cart-section"><div class="cart-title">Cart</div>${cartHtml}<div class="cart-total">Total: $${call.total}</div></div>
         <div class="turns">${turns}</div>
       </div>`;
   }
@@ -162,6 +172,14 @@ app.get('/voice/transcripts', async (_req, res) => {
   .time { font-size: 11px; color: #444; margin-left: 8px; }
   .lat { background: #f90; color: #000; border-radius: 4px; padding: 1px 5px; font-size: 11px; font-weight: bold; margin-left: 4px; }
   .empty { color: #444; text-align: center; padding: 60px; }
+  .cart-section { background: #111; border-bottom: 1px solid #222; padding: 12px 16px; }
+  .cart-title { font-size: 11px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 8px; }
+  .cart-row { font-size: 14px; color: #a3e635; padding: 3px 0; display: flex; justify-content: space-between; }
+  .cart-row .mods { color: #6b7280; font-size: 13px; }
+  .cart-row .note { color: #f59e0b; font-size: 13px; font-style: italic; }
+  .cart-row .price { color: #fff; font-weight: bold; }
+  .cart-total { font-size: 13px; color: #fff; font-weight: bold; margin-top: 8px; border-top: 1px solid #222; padding-top: 8px; }
+  .cart-empty { font-size: 13px; color: #444; font-style: italic; }
 </style>
 </head><body>
 <h1>Gohlem Call Transcripts</h1>

@@ -26,12 +26,15 @@ async function init() {
       total_dollars  NUMERIC(10,2),
       avg_latency_ms INTEGER,
       transcript     JSONB NOT NULL,
+      cart_items     JSONB,
       created_at     TIMESTAMPTZ DEFAULT NOW()
     )
   `);
+  // Add cart_items to existing tables that were created before this column existed
+  await db.query(`ALTER TABLE call_transcripts ADD COLUMN IF NOT EXISTS cart_items JSONB`);
 }
 
-async function save({ callSid, restaurant, startTime, duration, items, total, transcript }) {
+async function save({ callSid, restaurant, startTime, duration, items, total, transcript, cartItems = [] }) {
   const db = getPool();
   const latencies = transcript.filter(t => t.role === 'ai' && t.latencyMs).map(t => t.latencyMs);
   const avgLatency = latencies.length
@@ -40,9 +43,9 @@ async function save({ callSid, restaurant, startTime, duration, items, total, tr
 
   await db.query(
     `INSERT INTO call_transcripts
-       (call_sid, restaurant, started_at, duration_sec, item_count, total_dollars, avg_latency_ms, transcript)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [callSid, restaurant, new Date(startTime), duration, items, total, avgLatency, JSON.stringify(transcript)]
+       (call_sid, restaurant, started_at, duration_sec, item_count, total_dollars, avg_latency_ms, transcript, cart_items)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [callSid, restaurant, new Date(startTime), duration, items, total, avgLatency, JSON.stringify(transcript), JSON.stringify(cartItems)]
   );
 }
 

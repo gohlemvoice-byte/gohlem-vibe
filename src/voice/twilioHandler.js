@@ -234,6 +234,13 @@ function teardown(session, reason) {
 
   const duration = ((Date.now() - session.startTime) / 1000).toFixed(1);
   const order    = session.engine.cart.getOrder();
+  const cartItems = order.items.map(i => ({
+    name:                i.name,
+    quantity:            i.quantity,
+    modifiers:           i.modifiers.map(m => m.name),
+    specialInstructions: i.specialInstructions || '',
+    lineTotal:           i.lineTotal,
+  }));
 
   log(session.callSid, `Ended — ${reason} | ${duration}s | ${order.items.length} items | $${order.total.toFixed(2)}`);
 
@@ -245,6 +252,7 @@ function teardown(session, reason) {
     items:      order.items.length,
     total:      order.total.toFixed(2),
     transcript: session.transcript,
+    cartItems,
   }).catch(err => log(session.callSid, `DB save failed: ${err.message}`));
 
   if (session.dgConn) {
