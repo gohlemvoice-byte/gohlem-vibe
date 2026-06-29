@@ -92,19 +92,31 @@ async function fetchRetellCost(callId) {
     let data;
     try { data = JSON.parse(body); } catch { console.error(`[Retell] Cost parse error: ${body.slice(0,100)}`); return null; }
 
-    // Log the full response so we can see what fields Retell actually sends
-    console.log(`[Retell:${callId.slice(-8)}] get-call response keys: ${Object.keys(data).join(', ')}`);
-
-    // Try all known field names — will log which one matched
-    const cost = data.call_cost ?? data.cost_usd ?? data.cost ?? data.total_cost ?? data.billing_cost ?? null;
-    if (cost != null) {
-      const val = typeof cost === 'string' ? parseFloat(cost) : cost;
-      console.log(`[Retell:${callId.slice(-8)}] Retell call cost: $${val}`);
-      return isNaN(val) ? null : val;
+    // call_cost is present but is an OBJECT, not a plain number.
+    // Log its structure so we can extract the right sub-field.
+    const callCostRaw = data.call_cost;
+    if (callCostRaw != null && typeof callCostRaw === 'object') {
+      console.log(`[Retell:${callId.slice(-8)}] call_cost object: ${JSON.stringify(callCostRaw)}`);
+      // Try the most likely sub-field names for the total
+      const total = callCostRaw.combined_cost ?? callCostRaw.total ?? callCostRaw.amount ??
+                    callCostRaw.cost ?? callCostRaw.total_cost ?? null;
+      if (total != null) {
+        const val = Number(total);
+        console.log(`[Retell:${callId.slice(-8)}] Retell call cost: $${val}`);
+        return isNaN(val) ? null : val;
+      }
+      console.log(`[Retell:${callId.slice(-8)}] call_cost object keys: ${Object.keys(callCostRaw).join(', ')}`);
+      return null;
     }
 
-    // Cost field not found — log the full response for debugging
-    console.log(`[Retell:${callId.slice(-8)}] Cost field not found. Full response: ${body.slice(0, 500)}`);
+    // Fallback: try top-level number fields
+    const flatCost = data.call_cost ?? data.cost_usd ?? data.cost ?? data.total_cost ?? null;
+    if (flatCost != null && typeof flatCost === 'number') {
+      console.log(`[Retell:${callId.slice(-8)}] Retell call cost: $${flatCost}`);
+      return flatCost;
+    }
+
+    console.log(`[Retell:${callId.slice(-8)}] Cost not found. Full response: ${body.slice(0, 600)}`);
     return null;
   } catch (err) {
     console.error(`[Retell] Cost fetch exception: ${err.message}`);
