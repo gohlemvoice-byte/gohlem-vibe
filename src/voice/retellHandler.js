@@ -166,6 +166,7 @@ async function handleConnection(ws, callId, slug) {
     ended:            false,
     promptTokens:     0,
     completionTokens: 0,
+    processing:       false, // lock: prevents parallel response_required handling
   };
   sessions.set(callId, session);
 
@@ -196,8 +197,17 @@ async function handleConnection(ws, callId, slug) {
         return;
 
       } else if (interaction_type === 'response_required' || interaction_type === 'reminder_required') {
+        // Retell sends multiple response_required events for the same utterance as STT refines.
+        // If we're already processing one, skip the duplicate — only the first one counts.
+        if (session.processing) {
+          console.log(`${tag(callId)} Skipping duplicate ${interaction_type}`);
+          return;
+        }
+        session.processing = true;
+
         const userText = lastUserMessage(rtTranscript);
         if (!userText) {
+          session.processing = false;
           wsSend(ws, response_id, "I didn't catch that. Could you repeat?", true, false);
           return;
         }
@@ -205,7 +215,12 @@ async function handleConnection(ws, callId, slug) {
         const userTs = Date.now();
         session.transcript.push({ role: 'customer', text: userText, ts: userTs });
 
-        const { message, toolCalls = [], tokenUsage = {} } = await session.engine.chat(userText);
+        let message, toolCalls = [], tokenUsage = {};
+        try {
+          ({ message, toolCalls = [], tokenUsage = {} } = await session.engine.chat(userText));
+        } finally {
+          session.processing = false;
+        }
 
         const aiTs    = Date.now();
         const latency = aiTs - userTs;

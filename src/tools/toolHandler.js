@@ -57,6 +57,28 @@ class ToolHandler {
     }
   }
 
+  // Parse the restaurant's specialTerminology text (format: "term = canonical")
+  // and apply word-level alias replacement to the query before searching.
+  // This is the code-level enforcement of alias normalization — the AI prompt
+  // also mentions these terms but this ensures they resolve regardless of AI behavior.
+  _applyTerminologyAliases(query) {
+    const text = this.config.specialTerminology || '';
+    let q = query.toLowerCase().trim();
+    for (const line of text.split('\n')) {
+      const eqIdx = line.indexOf('=');
+      if (eqIdx < 0) continue;
+      const term    = line.slice(0, eqIdx).trim().toLowerCase();
+      const replace = line.slice(eqIdx + 1).trim().toLowerCase().split(/[,(]/)[0].trim(); // take only first word group
+      if (!term || !replace || term === replace) continue;
+      // Whole-word replacement only
+      try {
+        const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+        q = q.replace(re, replace);
+      } catch { /* skip malformed entry */ }
+    }
+    return q;
+  }
+
   // ─── search_menu ────────────────────────────────────────────────────────────
 
   _searchMenu({ query }) {
@@ -64,12 +86,19 @@ class ToolHandler {
       return { found: false, message: 'Empty search query.' };
     }
 
+    // Apply restaurant-specific terminology aliases before searching.
+    // "barakas" → "bourekas", "nachiris" → "nigiri", etc.
+    const resolvedQuery = this._applyTerminologyAliases(query);
+    if (resolvedQuery !== query.toLowerCase().trim()) {
+      console.log(`[TermAlias] "${query}" → "${resolvedQuery}"`);
+    }
+
     // Primary search
-    let scored = this.engine.findItems(query, 5);
+    let scored = this.engine.findItems(resolvedQuery, 5);
 
     // Secondary search on modifier content when primary fails
     if (scored.length === 0 || scored[0].score < 20) {
-      const secondary = this.engine.secondarySearch(query);
+      const secondary = this.engine.secondarySearch(resolvedQuery);
       if (secondary.length > 0) {
         // Return the secondary results as a loose category match
         const results = secondary.slice(0, 5).map(item => this._formatItem(item));
@@ -158,7 +187,7 @@ class ToolHandler {
 
   // ─── add_to_cart ────────────────────────────────────────────────────────────
 
-  _addToCart({ item_id, modifier_option_ids = [], quantity = 1, special_instructions = '' }) {
+  _addToCart({ item_id, modifier_option_ids = [], quantity = 1, special_instructions = '', price_confirmed = false }) {
 
     // Guard 1: item must come from the most recent search_menu call
     if (!this.validItemIds.has(item_id)) {
@@ -249,22 +278,24 @@ class ToolHandler {
     // Guard 5: price anomaly — block silent addition of bulk/party items.
     // When cart has items: block if price > 4× the average.
     // When cart is empty: block if price > PRICE_ANOMALY_EMPTY_CART_FLOOR.
-    // Previously the guard was skipped entirely on empty carts (avgCartPrice > 0 was false),
-    // allowing any item — including party trays — to be added as the first item with no confirmation.
-    const avgCartPrice = this._getAvgCartItemPrice();
-    const priceThreshold = avgCartPrice > 0
-      ? avgCartPrice * PRICE_ANOMALY_MULTIPLIER
-      : PRICE_ANOMALY_EMPTY_CART_FLOOR;
-    if (menuItem.base_price >= PRICE_ANOMALY_FLOOR && menuItem.base_price > priceThreshold) {
-      const context = avgCartPrice > 0
-        ? `higher than your average cart item ($${avgCartPrice.toFixed(2)})`
-        : `high for a first item`;
-      return {
-        success: false,
-        error: 'PRICE_ANOMALY',
-        message: `${menuItem.name} costs $${menuItem.base_price.toFixed(2)}, which is significantly ${context}.`,
-        prompt: `Confirm with the customer: "Just to confirm, you'd like to add ${menuItem.name} at $${menuItem.base_price.toFixed(2)}?"`,
-      };
+    // Bypass: if price_confirmed: true the AI has already told the customer the price
+    // and they said yes — skip the guard on retry.
+    if (!price_confirmed) {
+      const avgCartPrice = this._getAvgCartItemPrice();
+      const priceThreshold = avgCartPrice > 0
+        ? avgCartPrice * PRICE_ANOMALY_MULTIPLIER
+        : PRICE_ANOMALY_EMPTY_CART_FLOOR;
+      if (menuItem.base_price >= PRICE_ANOMALY_FLOOR && menuItem.base_price > priceThreshold) {
+        const context = avgCartPrice > 0
+          ? `higher than your average cart item ($${avgCartPrice.toFixed(2)})`
+          : `high for a first item`;
+        return {
+          success: false,
+          error: 'PRICE_ANOMALY',
+          message: `${menuItem.name} costs $${menuItem.base_price.toFixed(2)}, which is significantly ${context}.`,
+          prompt: `Tell the customer the price and ask: "Just to confirm, you'd like to add ${menuItem.name} at $${menuItem.base_price.toFixed(2)}?" If they say yes, retry add_to_cart with price_confirmed: true.`,
+        };
+      }
     }
 
     // Guard 7: top-result enforcement (B17 fix).

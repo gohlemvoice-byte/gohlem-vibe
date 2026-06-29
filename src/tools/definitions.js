@@ -53,6 +53,10 @@ const TOOL_DEFINITIONS = [
             type: 'string',
             description: 'Free-text preparation notes (e.g. "well done", "light sauce").',
           },
+          price_confirmed: {
+            type: 'boolean',
+            description: 'Set to true ONLY when retrying after a PRICE_ANOMALY error and the customer has explicitly confirmed the price. Never set on first attempt.',
+          },
         },
         required: ['item_id'],
       },
