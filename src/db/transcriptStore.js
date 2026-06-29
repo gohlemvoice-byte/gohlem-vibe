@@ -77,6 +77,14 @@ async function save({
   );
 }
 
+async function updateRetellCost(callSid, retellCostUsd) {
+  const db = getPool();
+  await db.query(
+    `UPDATE call_transcripts SET retell_cost_usd = $1 WHERE call_sid = $2`,
+    [retellCostUsd, callSid]
+  );
+}
+
 async function getRecent(limit = 50) {
   const db = getPool();
   const result = await db.query(
@@ -86,4 +94,4 @@ async function getRecent(limit = 50) {
   return result.rows;
 }
 
-module.exports = { init, save, getRecent };
+module.exports = { init, save, updateRetellCost, getRecent };

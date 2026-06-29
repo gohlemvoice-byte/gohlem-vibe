@@ -147,8 +147,7 @@ async function saveAndCleanup(callId, session) {
     `tokens: ${session.promptTokens}in/${session.completionTokens}out | LLM cost: $${llmCostUsd.toFixed(5)}`
   );
 
-  const retellCostUsd = await fetchRetellCost(callId);
-
+  // Save transcript immediately (without Retell cost — not yet computed by Retell)
   transcriptStore.save({
     callSid:          callId,
     restaurant:       session.engine.config.restaurantInfo.name,
@@ -160,8 +159,19 @@ async function saveAndCleanup(callId, session) {
     cartItems,
     promptTokens:     session.promptTokens     || null,
     completionTokens: session.completionTokens || null,
-    retellCostUsd,
+    retellCostUsd:    null,
   }).catch(err => console.error(`${tag(callId)} DB save failed: ${err.message}`));
+
+  // Retell finalizes billing a few seconds after the call ends.
+  // Fetch and update the cost 15 seconds later.
+  setTimeout(async () => {
+    const retellCostUsd = await fetchRetellCost(callId);
+    if (retellCostUsd != null && retellCostUsd > 0) {
+      transcriptStore.updateRetellCost(callId, retellCostUsd)
+        .then(() => console.log(`${tag(callId)} Retell cost saved: $${retellCostUsd}`))
+        .catch(err => console.error(`${tag(callId)} DB cost update failed: ${err.message}`));
+    }
+  }, 15000);
 
   sessions.delete(callId);
 }
