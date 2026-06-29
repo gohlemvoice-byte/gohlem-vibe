@@ -96,10 +96,25 @@ class ConversationEngine {
         trimmedHistory = trimmedHistory.slice(1);
       }
 
+      // Inject confirmed order state as a persistent system message so it
+      // survives history trimming. Without this, the AI loses pickup/delivery
+      // context once early messages scroll out of the 12-message window and
+      // restarts the greeting flow mid-conversation.
+      const persistentState = [];
+      if (this.cart.orderType) {
+        let stateNote = `[Order state: customer has already confirmed "${this.cart.orderType}" — do NOT ask about pickup or delivery again.`;
+        if (this.cart.deliveryAddress) {
+          stateNote += ` Delivery address already captured: "${this.cart.deliveryAddress}".`;
+        }
+        stateNote += ']';
+        persistentState.push({ role: 'system', content: stateNote });
+      }
+
       const res = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: this.systemPrompt },
+          ...persistentState,
           ...trimmedHistory,
         ],
         tools: TOOL_DEFINITIONS,
@@ -282,6 +297,7 @@ ORDERING RULES:
 - Never add an item the customer only asked about. "Do you have X?" is a question, not an order. Only add if they say "yes" or "I'll take it" after you describe it.
 - Never state a price you haven't received from a tool response.
 - MULTI-ITEM ORDERS: When the customer names multiple items in one sentence, you MUST add ALL of them before generating any spoken response. Your tool calls must include search_menu + add_to_cart for EVERY item the customer mentioned. If you added 2 items and the customer mentioned 3, search and add the 3rd BEFORE producing any text. Never stop mid-list to ask a question or confirm — finish all adds first, then speak.
+
 - When customer changes their mind, use update_cart_item or remove_from_cart.
 - When customer asks what's on the pizza / what toppings are available — call search_menu for that item and read the modifier options from the result.
 
