@@ -13,6 +13,7 @@ const restaurantConfig  = require('../config/restaurantConfig');
 const hotBagelsConfig   = require('../config/hotBagelsConfig');
 const sushiSpotConfig   = require('../config/sushiSpotConfig');
 const pizzaPlaceConfig  = require('../config/pizzaPlaceConfig');
+const transcriptStore   = require('../db/transcriptStore');
 
 const RESTAURANT_CONFIGS = {
   tonys:      restaurantConfig,
@@ -118,43 +119,67 @@ app.get('/voice/test', (_req, res) => {
   res.sendFile(path.join(__dirname, '../dashboard/voiceTest.html'));
 });
 
-// Clean transcript viewer for real phone calls
-app.get('/voice/transcripts', (_req, res) => {
-  const rows = callHistory.map(call => {
-    const turns = call.transcript.map(t => {
+// Clean transcript viewer for real phone calls — reads from database
+app.get('/voice/transcripts', async (_req, res) => {
+  let calls;
+  try {
+    const dbRows = await transcriptStore.getRecent(50);
+    calls = dbRows.map(row => ({
+      callSid:    row.call_sid,
+      restaurant: row.restaurant,
+      startTime:  row.started_at,
+      duration:   row.duration_sec,
+      items:      row.item_count,
+      total:      Number(row.total_dollars).toFixed(2),
+      avgLatency: row.avg_latency_ms,
+      transcript: typeof row.transcript === 'string' ? JSON.parse(row.transcript) : row.transcript,
+    }));
+  } catch (err) {
+    // DB unavailable — fall back to in-memory
+    log(null, `Transcripts DB read failed, using memory: ${err.message}`);
+    calls = callHistory.map(c => ({ ...c, avgLatency: null }));
+  }
+
+  function renderCall(call) {
+    const turns = (call.transcript || []).map(t => {
       const time = new Date(t.ts).toLocaleTimeString('en-US', { hour12: false });
-      const latency = t.latencyMs !== null && t.latencyMs !== undefined
+      const latency = t.latencyMs != null
         ? `<span class="lat">${t.latencyMs}ms</span>` : '';
-      const bubble = t.role === 'customer'
+      return t.role === 'customer'
         ? `<div class="turn customer"><span class="label">CALLER</span> <span class="time">${time}</span><p>${t.text}</p></div>`
         : `<div class="turn ai"><span class="label">AI ${latency}</span> <span class="time">${time}</span><p>${t.text}</p></div>`;
-      return bubble;
     }).join('');
 
-    const avgLatency = call.transcript
-      .filter(t => t.role === 'ai' && t.latencyMs)
-      .map(t => t.latencyMs);
-    const avg = avgLatency.length
-      ? Math.round(avgLatency.reduce((a, b) => a + b, 0) / avgLatency.length) : null;
+    const avg = call.avgLatency
+      ?? (() => {
+        const lats = (call.transcript || []).filter(t => t.role === 'ai' && t.latencyMs).map(t => t.latencyMs);
+        return lats.length ? Math.round(lats.reduce((a, b) => a + b, 0) / lats.length) : null;
+      })();
 
+    const when = new Date(call.startTime).toLocaleString('en-US', { timeZone: 'America/New_York', hour12: false });
     return `
       <div class="call">
         <div class="call-header">
-          📞 ${call.startTime} &nbsp;|&nbsp; ${call.duration}s &nbsp;|&nbsp;
+          📞 ${when} &nbsp;|&nbsp; ${call.duration}s &nbsp;|&nbsp;
           ${call.items} item(s) &nbsp;|&nbsp; $${call.total}
           ${avg ? `&nbsp;|&nbsp; <strong>avg latency: ${avg}ms</strong>` : ''}
+          ${call.restaurant ? `&nbsp;|&nbsp; ${call.restaurant}` : ''}
           <span class="sid">${call.callSid}</span>
         </div>
         <div class="turns">${turns}</div>
       </div>`;
-  }).join('');
+  }
+
+  const rows = calls.map(renderCall).join('');
 
   res.send(`<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <title>Gohlem Call Transcripts</title>
+<meta http-equiv="refresh" content="30">
 <style>
   body { font-family: sans-serif; background: #0f0f0f; color: #eee; padding: 24px; max-width: 800px; margin: auto; }
-  h1 { font-size: 18px; color: #aaa; margin-bottom: 24px; }
+  h1 { font-size: 18px; color: #aaa; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: #444; margin-bottom: 24px; }
   .call { background: #1a1a1a; border-radius: 10px; margin-bottom: 28px; overflow: hidden; }
   .call-header { background: #222; padding: 10px 16px; font-size: 13px; color: #888; }
   .call-header strong { color: #f90; }
@@ -164,7 +189,7 @@ app.get('/voice/transcripts', (_req, res) => {
   .turn p { margin: 4px 0 0 0; font-size: 15px; line-height: 1.5; }
   .turn.customer p { color: #fff; }
   .turn.ai p { color: #7dd3fc; }
-  .label { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #555; }
+  .label { font-size: 11px; font-weight: bold; text-transform: uppercase; }
   .turn.customer .label { color: #888; }
   .turn.ai .label { color: #3b82f6; }
   .time { font-size: 11px; color: #444; margin-left: 8px; }
@@ -172,8 +197,9 @@ app.get('/voice/transcripts', (_req, res) => {
   .empty { color: #444; text-align: center; padding: 60px; }
 </style>
 </head><body>
-<h1>Gohlem Call Transcripts — last ${callHistory.length} call(s)</h1>
-${callHistory.length === 0 ? '<div class="empty">No calls yet. Make a call to +19728458717 and refresh.</div>' : rows}
+<h1>Gohlem Call Transcripts</h1>
+<div class="sub">${calls.length} call(s) stored &nbsp;·&nbsp; auto-refreshes every 30s &nbsp;·&nbsp; survives deploys</div>
+${calls.length === 0 ? '<div class="empty">No calls yet. Make a call to +19728458717 and refresh.</div>' : rows}
 </body></html>`);
 });
 
@@ -497,9 +523,10 @@ function teardown(session, reason) {
   log(session.callSid, `Duration: ${duration}s | Items: ${order.items.length} | Total: $${order.total.toFixed(2)}`);
   log(session.callSid, `Summary: ${session.engine.cart.getSummary()}`);
 
-  // Save to call history for the transcripts page
+  // Save to in-memory cache (fallback if db is unavailable)
   callHistory.unshift({
     callSid: session.callSid,
+    restaurant: session.engine.config.restaurantInfo.name,
     startTime: new Date(session.startTime).toISOString(),
     duration,
     items: order.items.length,
@@ -507,6 +534,17 @@ function teardown(session, reason) {
     transcript: session.transcript,
   });
   if (callHistory.length > 30) callHistory.pop();
+
+  // Persist to database
+  transcriptStore.save({
+    callSid: session.callSid,
+    restaurant: session.engine.config.restaurantInfo.name,
+    startTime: session.startTime,
+    duration,
+    items: order.items.length,
+    total: order.total.toFixed(2),
+    transcript: session.transcript,
+  }).catch(err => log(session.callSid, `DB save failed: ${err.message}`));
 
   if (session.dgConn) {
     try { session.dgConn.requestClose(); } catch {}
@@ -517,6 +555,10 @@ function teardown(session, reason) {
 }
 
 // ─── START ────────────────────────────────────────────────────────────────────
+
+transcriptStore.init()
+  .then(() => log(null, 'DB: call_transcripts table ready'))
+  .catch(err => log(null, `DB init failed (transcripts will use memory only): ${err.message}`));
 
 server.listen(PORT, () => {
   log(null, `Gohlem.ai voice server on port ${PORT}`);
