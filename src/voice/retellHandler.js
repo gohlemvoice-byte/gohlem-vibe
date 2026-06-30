@@ -238,9 +238,9 @@ async function handleConnection(ws, callId, slug) {
         const userTs = Date.now();
         session.transcript.push({ role: 'customer', text: userText, ts: userTs });
 
-        let message, toolCalls = [], tokenUsage = {};
+        let message, toolCalls = [], tokenUsage = {}, steps = [];
         try {
-          ({ message, toolCalls = [], tokenUsage = {} } = await session.engine.chat(userText));
+          ({ message, toolCalls = [], tokenUsage = {}, steps = [] } = await session.engine.chat(userText));
         } finally {
           session.processing = false;
         }
@@ -256,6 +256,7 @@ async function handleConnection(ws, callId, slug) {
         const aiEntry = { role: 'ai', text: message, ts: aiTs, latencyMs: latency };
         if (toolCalls.length)             aiEntry.toolCalls = toolCalls;
         if (tokenUsage.promptTokens)      aiEntry.tokens    = tokenUsage;
+        if (steps.length)                 aiEntry.steps     = steps;
         session.transcript.push(aiEntry);
 
         console.log(

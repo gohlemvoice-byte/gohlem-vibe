@@ -148,6 +148,19 @@ app.get('/voice/transcripts', async (_req, res) => {
     return `<div class="tool-row">${pills}</div>`;
   }
 
+  function stepBreakdown(steps) {
+    if (!steps || steps.length === 0) return '';
+    const rows = steps.map(s => {
+      if (s.type === 'api') {
+        const final = s.final ? ' <span class="step-final">final</span>' : '';
+        return `<div class="step step-api">API call${final}: <strong>${s.durationMs.toLocaleString()}ms</strong> &nbsp; ${s.promptTokens.toLocaleString()}in + ${s.completionTokens}out</div>`;
+      }
+      const isErr = s.outcome !== 'ok' && !s.outcome.startsWith('found');
+      return `<div class="step step-tool ${isErr ? 'step-err' : 'step-ok'}">↳ ${s.name}: <strong>${s.durationMs}ms</strong> → ${s.outcome}</div>`;
+    }).join('');
+    return `<div class="step-timing">${rows}</div>`;
+  }
+
   function renderCall(call, idx) {
     const turns = (call.transcript || []).map(t => {
       const time    = new Date(t.ts).toLocaleTimeString('en-US', { hour12: false });
@@ -155,9 +168,10 @@ app.get('/voice/transcripts', async (_req, res) => {
       const tokBadge = t.tokens
         ? `<span class="tok">${t.tokens.promptTokens}+${t.tokens.completionTokens}tok</span>` : '';
       const tools   = toolSummary(t.toolCalls);
+      const steps   = stepBreakdown(t.steps);
       return t.role === 'customer'
         ? `<div class="turn customer"><span class="label">CALLER</span> <span class="time">${time}</span><p>${t.text}</p></div>`
-        : `<div class="turn ai"><span class="label">AI ${latency}${tokBadge}</span> <span class="time">${time}</span>${tools}<p>${t.text}</p></div>`;
+        : `<div class="turn ai"><span class="label">AI ${latency}${tokBadge}</span> <span class="time">${time}</span>${tools}<p>${t.text}</p>${steps}</div>`;
     }).join('');
 
     const avg = call.avgLatency ?? (() => {
@@ -263,6 +277,14 @@ app.get('/voice/transcripts', async (_req, res) => {
   .cost-badge { font-size: 11px; color: #a3e635; }
   .retell-badge { color: #f59e0b; margin-left: 4px; }
   .call-num { background: #2a2a2a; color: #888; border-radius: 4px; padding: 1px 6px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+  .step-timing { margin-top: 6px; font-size: 11px; font-family: monospace; line-height: 1.7; }
+  .step { padding: 1px 0; }
+  .step-api { color: #94a3b8; }
+  .step-api strong { color: #e2e8f0; }
+  .step-final { background: #1e3a1e; color: #4ade80; border-radius: 3px; padding: 0 4px; font-size: 10px; }
+  .step-tool { padding-left: 16px; }
+  .step-ok strong { color: #4ade80; } .step-ok { color: #4ade80; opacity: 0.85; }
+  .step-err strong { color: #f87171; } .step-err { color: #f87171; }
   .notes-section { background: #0f0f1a; border-bottom: 1px solid #1a1a2a; padding: 10px 16px; }
   .notes-title { font-size: 11px; font-weight: bold; color: #3a3a6a; text-transform: uppercase; margin-bottom: 6px; }
   .notes-input { width: 100%; box-sizing: border-box; background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 6px; color: #c4b5fd; font-size: 13px; padding: 8px 10px; resize: vertical; min-height: 54px; font-family: sans-serif; outline: none; }

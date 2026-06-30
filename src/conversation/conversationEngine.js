@@ -87,12 +87,15 @@ class ConversationEngine {
     const turnToolLog = [];            // transcript: tool calls + results this turn
     let promptTokens     = 0;          // accumulated across all loop iterations
     let completionTokens = 0;
+    const steps = [];                  // per-step timing: one entry per API call or tool execution
 
     // Helper: wrap a string return into the standard result shape
     const ret = (message) => ({
       message,
       toolCalls:  turnToolLog,
       tokenUsage: { promptTokens, completionTokens },
+      steps,
+      iterations,
     });
 
     while (iterations < MAX_TOOL_ITERATIONS) {
@@ -142,6 +145,7 @@ class ConversationEngine {
         content: '[REQUIRED: The customer has requested an unavailable item twice. You MUST offer to connect them with a human team member now. Do NOT call any tools. Do NOT suggest alternatives. Your response must be the transfer offer only.]',
       }] : [];
 
+      const apiCallStart = Date.now();
       const res = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [
@@ -155,12 +159,22 @@ class ConversationEngine {
         temperature: 0.2,
         max_tokens: 600,
       });
+      const apiCallMs = Date.now() - apiCallStart;
 
       // Accumulate token usage across all loop iterations this turn
+      const iterPrompt      = res.usage?.prompt_tokens     || 0;
+      const iterCompletion  = res.usage?.completion_tokens || 0;
       if (res.usage) {
-        promptTokens     += res.usage.prompt_tokens     || 0;
-        completionTokens += res.usage.completion_tokens || 0;
+        promptTokens     += iterPrompt;
+        completionTokens += iterCompletion;
       }
+
+      // Record this API call as a timing step (mutated below to mark final)
+      const apiStep = {
+        type: 'api', iteration: iterations, durationMs: apiCallMs,
+        promptTokens: iterPrompt, completionTokens: iterCompletion,
+      };
+      steps.push(apiStep);
 
       const msg = res.choices[0].message;
 
@@ -177,12 +191,14 @@ class ConversationEngine {
           console.log('[B04] Tool calls that were suppressed:', JSON.stringify(msg.tool_calls.map(c => ({ name: c.function.name, args: c.function.arguments }))));
           const b04Cart = this.toolHandler.cart.getActiveItems().map(i => `${i.name} x${i.quantity}`);
           console.log('[B04] Cart at suppression point:', b04Cart.join(', ') || '(empty)');
+          apiStep.final = true;
           return ret(msg.content);
         }
       }
 
       // No tool calls — this is the final spoken response
       if (!msg.tool_calls || msg.tool_calls.length === 0) {
+        apiStep.final = true;
         const responseText = msg.content || "I'm sorry, I didn't catch that. Could you repeat?";
 
         // B01: intercept denial language when no search was called this turn.
@@ -221,7 +237,23 @@ class ConversationEngine {
         if (call.function.name === 'search_menu') searchCalledThisTurn = true;
         currentTurnToolCalls.push({ name: call.function.name, args });
 
+        const toolStart = Date.now();
         const result = this.toolHandler.execute(call.function.name, args);
+        const toolMs = Date.now() - toolStart;
+
+        // Compact outcome label for the timing log
+        let toolOutcome;
+        if (call.function.name === 'search_menu') {
+          toolOutcome = result.found ? `found:${result.items?.length || 0}` : 'not_found';
+        } else if (result.error) {
+          toolOutcome = result.error;
+        } else if (result.success === false) {
+          toolOutcome = 'error';
+        } else {
+          toolOutcome = 'ok';
+        }
+        steps.push({ type: 'tool', iteration: iterations, name: call.function.name, durationMs: toolMs, outcome: toolOutcome });
+
         turnToolLog.push({ name: call.function.name, args, result });
         this._trackFailures(call.function.name, args, result);
 
@@ -256,7 +288,7 @@ class ConversationEngine {
     }
 
     // Safety fallback if tool loop hits max iterations
-    return "I'm having trouble with that. Let me connect you with someone who can help.";
+    return ret("I'm having trouble with that. Let me connect you with someone who can help.");
   }
 
   // B13 helper: scan recent user messages for special instruction keywords.
