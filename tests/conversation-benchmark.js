@@ -645,6 +645,43 @@ Once added, say "that's it."`,
     max_turns: 8,
   },
 
+  // ── GROUP 33: B04 — phantom item during human fallback (empty cart) ────────
+  // Reproduction test: trigger human fallback on an empty cart, assert nothing
+  // was added. Cart must be completely empty when the fallback fires.
+
+  {
+    id: 'S031', restaurant: 'hotbagels',
+    description: 'B04 empty-cart: human fallback fires — cart must stay completely empty',
+    scenario: `You are calling Hot Bagels for pickup.
+Tell the agent you are looking for "lobster bisque". Say exactly those words.
+If the agent says they do not have it or offers alternatives, insist: "I really wanted lobster bisque, are you sure you don't have it?"
+If they offer to connect you with a human or transfer you, say "yes please" and then output exactly: DONE
+Do NOT order anything else under any circumstances. Do NOT say DONE until the agent offers to transfer or connect you with someone.`,
+    expected_cart: [],
+    must_not_contain: ['Vegetable', 'Platter', 'Salad', 'Sandwich', 'Bagel'],
+    max_cart_quantity: 0,
+    max_turns: 12,
+  },
+
+  // ── GROUP 34: B04 — phantom item during human fallback (item already in cart) ──
+  // The production incident happened with items already in cart. This tests whether
+  // a phantom item appears alongside the legitimate one after fallback fires.
+
+  {
+    id: 'S032', restaurant: 'hotbagels',
+    description: 'B04 mid-order: human fallback fires after real add — only real item stays in cart',
+    scenario: `You are calling Hot Bagels for pickup.
+First, order a plain bagel with butter. Once it is added, say "thanks."
+Then tell the agent you also want "lobster bisque". Say exactly those words.
+If they say they do not have it or offer alternatives, say "I really need lobster bisque, are you sure?"
+If they offer to connect you with a human, say "yes please" and then output exactly: DONE
+Do NOT say DONE until the agent offers to transfer you.`,
+    expected_cart: [{ item_name_contains: 'Bagel' }],
+    must_not_contain: ['Vegetable Platter', 'Soup', 'Bisque'],
+    max_cart_quantity: 2,
+    max_turns: 14,
+  },
+
 ];
 
 // ─── SIMULATOR RUNNER ────────────────────────────────────────────────────────
@@ -820,15 +857,23 @@ async function runCase(tc) {
 }
 
 async function main() {
+  // --only C001,C002,S001  →  run only those test IDs
+  const onlyArg = process.argv.find(a => a.startsWith('--only='));
+  const onlyIds = onlyArg ? new Set(onlyArg.replace('--only=', '').split(',').map(s => s.trim())) : null;
+
+  const staticCases = onlyIds ? TEST_CASES.filter(tc => onlyIds.has(tc.id)) : TEST_CASES;
+  const simCases    = onlyIds ? SIMULATOR_CASES.filter(tc => onlyIds.has(tc.id)) : SIMULATOR_CASES;
+
   console.log('\n  GOHLEM CONVERSATION BENCHMARK');
-  console.log(`  ${TEST_CASES.length} static + ${SIMULATOR_CASES.length} simulator cases  |  Real OpenAI API  |  ~4–7 min\n`);
+  if (onlyIds) console.log(`  Running: ${[...onlyIds].join(', ')}\n`);
+  else console.log(`  ${TEST_CASES.length} static + ${SIMULATOR_CASES.length} simulator cases  |  Real OpenAI API  |  ~4–7 min\n`);
 
   let passed = 0;
   let failed = 0;
 
   // ── Static cases (scripted turns) ──────────────────────────────────────────
-  console.log('  ── STATIC CASES (scripted) ──────────────────────────────────────────────\n');
-  for (const tc of TEST_CASES) {
+  if (staticCases.length) console.log('  ── STATIC CASES (scripted) ──────────────────────────────────────────────\n');
+  for (const tc of staticCases) {
     const label = `[${tc.id}] ${tc.description}`;
     process.stdout.write(`  ${label.slice(0, 68).padEnd(68)} `);
     try {
@@ -849,11 +894,11 @@ async function main() {
   }
 
   // ── Simulator cases (LLM plays customer) ───────────────────────────────────
-  console.log('\n  ── SIMULATOR CASES (AI customer) ────────────────────────────────────────\n');
+  if (simCases.length) console.log('\n  ── SIMULATOR CASES (AI customer) ────────────────────────────────────────\n');
   let simPassed = 0;
   let simFailed = 0;
 
-  for (const tc of SIMULATOR_CASES) {
+  for (const tc of simCases) {
     const label = `[${tc.id}] ${tc.description}`;
     process.stdout.write(`  ${label.slice(0, 68).padEnd(68)} `);
     try {
@@ -874,8 +919,8 @@ async function main() {
   }
 
   // ── Summary ────────────────────────────────────────────────────────────────
-  const staticTotal = TEST_CASES.length;
-  const simTotal    = SIMULATOR_CASES.length;
+  const staticTotal = staticCases.length;
+  const simTotal    = simCases.length;
   const staticPct   = Math.round(passed / staticTotal * 100);
   const simPct      = simTotal > 0 ? Math.round(simPassed / simTotal * 100) : 0;
 
