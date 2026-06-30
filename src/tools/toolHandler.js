@@ -36,15 +36,6 @@ class ToolHandler {
 
     // Failure counter: tracks how many times the same query has failed.
     this.failureCounts = new Map();
-
-    // Short modifier aliases: maps real modifier option IDs to compact codes (M1, M2, …)
-    // used ONLY inside error responses (MISSING_REQUIRED, INVALID_MODIFIER_ID).
-    // The AI may carry these codes to the next turn when retrying add_to_cart.
-    // search_menu responses are NOT affected — they always return real IDs.
-    // Persists for the entire call so codes remain valid across the AWAITING_MODIFIER turn boundary.
-    this._optionAliasCount  = 0;
-    this._realToShortOption = new Map(); // realId → "M3"
-    this._shortToRealOption = new Map(); // "M3" → realId
   }
 
   // Called at the start of each user turn to reset per-turn state.
@@ -194,36 +185,9 @@ class ToolHandler {
     this.lastSearchItems = [];
   }
 
-  // ─── MODIFIER ALIAS HELPERS ─────────────────────────────────────────────────
-  // Used only in error responses so the AI can carry short codes across turns.
-
-  _optionAlias(realId) {
-    if (realId === undefined || realId === null) return realId;
-    if (!this._realToShortOption.has(realId)) {
-      const short = `M${++this._optionAliasCount}`;
-      this._realToShortOption.set(realId, short);
-      this._shortToRealOption.set(short, realId);
-    }
-    return this._realToShortOption.get(realId);
-  }
-
-  // Translate a short alias back to its real ID, or pass through unchanged if it's already real.
-  _resolveOptionId(id) {
-    return this._shortToRealOption.get(id) || id;
-  }
-
-  _resolveOptionIds(ids) {
-    return ids.map(id => this._resolveOptionId(id));
-  }
-
   // ─── add_to_cart ────────────────────────────────────────────────────────────
 
   _addToCart({ item_id, modifier_option_ids = [], quantity = 1, special_instructions = '', price_confirmed = false }) {
-
-    // Translate any short modifier aliases (M1, M2, …) the AI may have carried over from
-    // a MISSING_REQUIRED or INVALID_MODIFIER_ID response in a previous turn.
-    // Real IDs pass through _resolveOptionId unchanged, so the happy path is identical.
-    const realModIds = this._resolveOptionIds(modifier_option_ids);
 
     // Guard 1: item must come from the most recent search_menu call
     if (!this.validItemIds.has(item_id)) {
@@ -239,37 +203,28 @@ class ToolHandler {
       return { success: false, error: 'ITEM_NOT_FOUND', message: 'Item not found in menu.' };
     }
 
-    // Guard 2: validate all modifier IDs against the valid set for this item.
-    // Returns the full valid option list with short aliases so the AI can self-correct
-    // on the next retry without needing another search_menu call.
+    // Guard 2: validate all modifier IDs against the valid set for this item
     const validModsForItem = this.validModifierIds.get(item_id) || new Set();
-    const invalidIds = realModIds.filter(id => !validModsForItem.has(id));
+    const invalidIds = modifier_option_ids.filter(id => !validModsForItem.has(id));
     if (invalidIds.length > 0) {
       return {
         success: false,
         error: 'INVALID_MODIFIER_ID',
-        message: `Modifier ID(s) not recognized: ${invalidIds.join(', ')}. Use the exact IDs from the search_menu response.`,
-        valid_modifier_groups: (menuItem.modifier_groups || []).map(g => ({
-          group_name: g.name,
-          required: g.required,
-          options: g.options.map(o => ({ id: this._optionAlias(o.id), name: o.name, price: o.price })),
-        })),
+        message: `These modifier IDs were not in the search results: ${invalidIds.join(', ')}. Only use IDs from the search_menu response.`,
       };
     }
 
-    // Guard 3: check required modifier groups.
-    // Option IDs in missing_required use short aliases so the AI can pass them back
-    // directly in the retry add_to_cart without re-typing long UUIDs.
+    // Guard 3: check required modifier groups
     const requiredGroups = this.engine.getRequiredGroups(menuItem);
     const missing = [];
     for (const group of requiredGroups) {
       const groupOptionIds = new Set(group.options.map(o => o.id));
-      const selectedFromGroup = realModIds.filter(id => groupOptionIds.has(id));
+      const selectedFromGroup = modifier_option_ids.filter(id => groupOptionIds.has(id));
       if (selectedFromGroup.length === 0) {
         missing.push({
           group_id: group.id,
           group_name: group.name,
-          options: group.options.map(o => ({ id: this._optionAlias(o.id), name: o.name, price: o.price })),
+          options: group.options.map(o => ({ id: o.id, name: o.name, price: o.price })),
         });
       }
     }
@@ -289,13 +244,13 @@ class ToolHandler {
     for (const group of allModGroups) {
       if (group.max_selections && group.max_selections > 0) {
         const groupOptionIds = new Set(group.options.map(o => o.id));
-        const selectedFromGroup = realModIds.filter(id => groupOptionIds.has(id));
+        const selectedFromGroup = modifier_option_ids.filter(id => groupOptionIds.has(id));
         if (selectedFromGroup.length > group.max_selections) {
           overLimit.push({
             group_name: group.name,
             max_allowed: group.max_selections,
             selected_count: selectedFromGroup.length,
-            options: group.options.map(o => ({ id: this._optionAlias(o.id), name: o.name, price: o.price })),
+            options: group.options.map(o => ({ id: o.id, name: o.name, price: o.price })),
           });
         }
       }
@@ -363,8 +318,8 @@ class ToolHandler {
       }
     }
 
-    // Build modifier objects for the cart using real IDs (translated from aliases if needed)
-    const modifiers = realModIds.map(optId => {
+    // Build modifier objects for the cart
+    const modifiers = modifier_option_ids.map(optId => {
       const opt = this.engine.getOptionById(menuItem, optId);
       return {
         id: optId,
@@ -420,14 +375,10 @@ class ToolHandler {
 
     const menuItem = this.engine.getItemById(item.menuItemId);
 
-    // Translate any short aliases carried from error responses
-    const realAddIds    = this._resolveOptionIds(add_modifier_ids);
-    const realRemoveIds = this._resolveOptionIds(remove_modifier_ids);
-
-    // Validate any add modifier IDs against the item's full option set
-    if (realAddIds.length > 0 && menuItem) {
+    // Validate any add_modifier_ids against the current valid set (or item's own options)
+    if (add_modifier_ids.length > 0 && menuItem) {
       const allItemOptionIds = this.engine.getAllOptionIds(menuItem);
-      const invalid = realAddIds.filter(id => !allItemOptionIds.has(id));
+      const invalid = add_modifier_ids.filter(id => !allItemOptionIds.has(id));
       if (invalid.length > 0) {
         return {
           success: false,
@@ -440,14 +391,14 @@ class ToolHandler {
     // Build updated modifiers
     let currentModifiers = [...item.modifiers];
 
-    // Remove specified modifiers (cart stores real IDs, compare against translated IDs)
-    if (realRemoveIds.length > 0) {
-      currentModifiers = currentModifiers.filter(m => !realRemoveIds.includes(m.id));
+    // Remove specified modifiers
+    if (remove_modifier_ids.length > 0) {
+      currentModifiers = currentModifiers.filter(m => !remove_modifier_ids.includes(m.id));
     }
 
-    // Add new modifiers using real IDs
-    if (realAddIds.length > 0 && menuItem) {
-      for (const optId of realAddIds) {
+    // Add new modifiers
+    if (add_modifier_ids.length > 0 && menuItem) {
+      for (const optId of add_modifier_ids) {
         if (!currentModifiers.find(m => m.id === optId)) {
           const opt = this.engine.getOptionById(menuItem, optId);
           currentModifiers.push({
