@@ -25,7 +25,7 @@
           {
             "id": "regular_pie",
             "name": "Regular Pie",
-            "description": "Classic pizza - pizza sauce and mozzarella",
+            "description": "Classic cheese pizza - pizza sauce and mozzarella",
             "price": 23.00,
             "modifiers": []
           },

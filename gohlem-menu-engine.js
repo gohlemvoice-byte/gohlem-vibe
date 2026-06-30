@@ -4,10 +4,8 @@ const fs = require('fs');
 
 // Word-level alias normalization. Runs before every search.
 // Only add aliases for words that do NOT appear as tokens in item names.
-// If the word already matches a token, no alias is needed.
+// If the word already matches a token, no alias is needed — use TOKEN_EQUIVALENTS instead.
 const WORD_ALIASES = {
-  pie: 'pizza',
-  pies: 'pizza',
   sub: 'hero',
   subs: 'hero',
   hoagie: 'hero',
@@ -17,6 +15,18 @@ const WORD_ALIASES = {
   // "parmesan" does not appear in item names; items say "parm" or "parmigiana"
   parmesan: 'parmigiana',
 };
+
+// Semantic token equivalence groups used in scoring only — does NOT change the query.
+// Tokens within the same Set match each other at the +15 level (same as exact match).
+// Use this when different restaurants name the same concept differently (pie vs pizza).
+const TOKEN_EQUIVALENTS = [
+  new Set(['pizza', 'pie']),
+];
+
+function tokensMatch(t1, t2) {
+  if (t1 === t2) return true;
+  return TOKEN_EQUIVALENTS.some(group => group.has(t1) && group.has(t2));
+}
 
 const STOP_WORDS = new Set([
   'a', 'an', 'the', 'of', 'and', 'or', 'with', 'for', 'to', 'in',
@@ -111,6 +121,7 @@ class MenuEngine {
     // Full-phrase aliases first (must come before word-level to avoid partial clobbers)
     const phraseAliases = {
       'plain pizza': 'cheese pizza',
+      'cheese pie': 'cheese pizza',   // Tony's: restores substring-match bonus for Cheese Pizza
       'plain slice': 'cheese slice',
       'regular slice': 'cheese slice',
       'chicken wing': 'chicken wings',
@@ -135,9 +146,18 @@ class MenuEngine {
 
     const scored = this.items
       .filter(item => item.available)
-      .map(item => ({ item, score: this._score(item, normalized, queryTokens) }))
+      .map(item => {
+        const { score, unmatchedNameTokens } = this._score(item, normalized, queryTokens);
+        return { item, score, unmatchedNameTokens };
+      })
       .filter(r => r.score > 0)
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        // Tiebreaker 1: fewer unmatched name tokens (more specific match wins)
+        if (a.unmatchedNameTokens !== b.unmatchedNameTokens) return a.unmatchedNameTokens - b.unmatchedNameTokens;
+        // Tiebreaker 2: shorter name (avoid "Pizza Wrap" beating "Cheese Pizza" on ties)
+        return a.item.nameTokens.length - b.item.nameTokens.length;
+      })
       .slice(0, maxResults);
 
     return scored;
@@ -147,6 +167,7 @@ class MenuEngine {
     const nameLower = item.name.toLowerCase();
     let score = 0;
     let nameMatchCount = 0;
+    const matchedNameTokenSet = new Set();
 
     // 1. Exact full-name match — highest priority
     if (nameLower === normalizedQuery) {
@@ -158,20 +179,24 @@ class MenuEngine {
       score += 40;
     }
 
-    // 3. Token matching against item name tokens
+    // 3. Token matching against item name tokens (uses TOKEN_EQUIVALENTS for semantic matches)
     for (const qt of queryTokens) {
       let matched = false;
       for (const nt of item.nameTokens) {
-        if (nt === qt) {
+        if (tokensMatch(nt, qt)) {
           score += 15;
           matched = true;
+          matchedNameTokenSet.add(nt);
           break;
         }
         // Partial match only when BOTH tokens are long enough to be meaningful.
         // nt.length > 3 prevents "san" in "sandwich" from matching San Pellegrino.
-        if (qt.length > 4 && nt.length > 3 && (nt.includes(qt) || qt.includes(nt))) {
+        // isNegatingModifier check: prevents "cheeseless" from matching "cheese" query.
+        const isNegatingModifier = nt.startsWith(qt) && (nt.endsWith('less') || nt.endsWith('free'));
+        if (!isNegatingModifier && qt.length > 4 && nt.length > 3 && (nt.includes(qt) || qt.includes(nt))) {
           score += 7;
           matched = true;
+          matchedNameTokenSet.add(nt);
           break;
         }
       }
@@ -188,10 +213,16 @@ class MenuEngine {
       score += Math.round((nameMatchCount / queryTokens.length) * 20);
     }
 
-    // 6. Category name match (low weight)
+    // 6. Category name match (low weight) + coverage bonus
     const catTokens = this._tokenize(item.category);
     for (const qt of queryTokens) {
-      if (catTokens.includes(qt)) score += 5;
+      if (catTokens.some(ct => tokensMatch(ct, qt))) score += 5;
+    }
+    // Bonus when query completely covers the category name via equivalence.
+    // "cheese pizza" covers "Pizza Pie" category (pizza≡pie) — boosts items in the
+    // right category and differentiates "Pizza Pie" items from "Pizza Wrap" items.
+    if (catTokens.length > 0 && catTokens.every(ct => queryTokens.some(qt => tokensMatch(ct, qt)))) {
+      score += 15;
     }
 
     // 7. Description token match (very low weight)
@@ -199,16 +230,21 @@ class MenuEngine {
       for (const qt of queryTokens) {
         if (item.descTokens.includes(qt)) score += 3;
       }
+      // Phrase bonus: full query appears verbatim in description (e.g. "cheese pizza" in
+      // "Classic cheese pizza - pizza sauce and mozzarella" → differentiates Regular Pie
+      // from other pizza pies that also mention cheese and pizza in their descriptions).
+      if (normalizedQuery.length > 4 && (item.description || '').toLowerCase().includes(normalizedQuery)) {
+        score += 15;
+      }
     }
 
-    // 8. EXTRA-WORD PENALTY: each item name word beyond the query count costs 10 points.
-    // Fixes "hot coffee" -> "Hot Coffee Box" wrong match (1 extra word = -10, gap stays large).
-    // Using 10 (not 15) so that close-name items like "New York Cheesecake" vs "Italian Cheesecake"
-    // remain within the clarification threshold when searched with just "cheesecake".
-    const extraWords = Math.max(0, item.nameTokens.length - queryTokens.length);
-    score -= extraWords * 10;
+    // 8. UNMATCHED NAME TOKEN PENALTY: each name token with no matching query token costs 10 points.
+    // Replaces the old length-difference penalty — this version catches equal-length wrong matches
+    // (e.g. "Pizza Wrap" for "cheese pizza" query: "wrap" has no match → -10).
+    const unmatchedNameTokens = item.nameTokens.filter(nt => !matchedNameTokenSet.has(nt)).length;
+    score -= unmatchedNameTokens * 10;
 
-    return Math.max(0, score);
+    return { score: Math.max(0, score), unmatchedNameTokens };
   }
 
   // ─── SECONDARY SEARCH (modifier content) ────────────────────────────────────
