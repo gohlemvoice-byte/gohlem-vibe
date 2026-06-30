@@ -104,6 +104,7 @@ app.get('/voice/transcripts', async (_req, res) => {
   try {
     const dbRows = await transcriptStore.getRecent(50);
     calls = dbRows.map(row => ({
+      id:               row.id,
       callSid:          row.call_sid,
       restaurant:       row.restaurant,
       startTime:        row.started_at,
@@ -116,6 +117,7 @@ app.get('/voice/transcripts', async (_req, res) => {
       promptTokens:     row.prompt_tokens     ? Number(row.prompt_tokens)     : null,
       completionTokens: row.completion_tokens ? Number(row.completion_tokens) : null,
       retellCostUsd:    row.retell_cost_usd   ? Number(row.retell_cost_usd)   : null,
+      notes:            row.notes || '',
     }));
   } catch (err) {
     log(null, `Transcripts DB read failed, using memory: ${err.message}`);
@@ -189,11 +191,12 @@ app.get('/voice/transcripts', async (_req, res) => {
     const when = new Date(call.startTime).toLocaleString('en-US', { timeZone: 'America/New_York', hour12: false });
     const costTag = llmCost !== null ? ` &nbsp;|&nbsp; <span class="cost-badge">LLM $${llmCost.toFixed(4)}</span>` : '';
     const retellTag = call.retellCostUsd !== null ? ` <span class="cost-badge retell-badge">Retell $${call.retellCostUsd.toFixed(4)}</span>` : '';
+    const callNum = call.id ? `<span class="call-num">#${call.id}</span>` : '';
     return `
       <div class="call" id="call-${idx}">
         <div class="call-header" onclick="toggle(${idx})">
           <span class="chevron" id="chev-${idx}">▶</span>
-          📞 ${when} &nbsp;|&nbsp; ${call.duration}s &nbsp;|&nbsp;
+          ${callNum} ${when} &nbsp;|&nbsp; ${call.duration}s &nbsp;|&nbsp;
           ${call.items} item(s) &nbsp;|&nbsp; $${call.total}
           ${avg ? `&nbsp;|&nbsp; <strong>avg ${avg}ms</strong>` : ''}
           ${call.restaurant ? `&nbsp;|&nbsp; ${call.restaurant}` : ''}
@@ -203,6 +206,11 @@ app.get('/voice/transcripts', async (_req, res) => {
         <div class="call-body" id="body-${idx}">
           <div class="cart-section"><div class="cart-title">Cart</div>${cartHtml}<div class="cart-total">Total: $${call.total}</div></div>
           ${costHtml}
+          <div class="notes-section">
+            <div class="notes-title">Notes</div>
+            <textarea class="notes-input" id="notes-${call.id}" placeholder="Add test notes or score here…" onblur="saveNotes(${call.id}, this)">${call.notes ? call.notes.replace(/</g, '&lt;') : ''}</textarea>
+            <span class="notes-status" id="nstatus-${call.id}"></span>
+          </div>
           <div class="turns">${turns}</div>
         </div>
       </div>`;
@@ -254,6 +262,12 @@ app.get('/voice/transcripts', async (_req, res) => {
   .cost-total-row { border-top: 1px solid #1a2a1a; margin-top: 4px; padding-top: 6px; color: #9ca3af; font-weight: bold; }
   .cost-badge { font-size: 11px; color: #a3e635; }
   .retell-badge { color: #f59e0b; margin-left: 4px; }
+  .call-num { background: #2a2a2a; color: #888; border-radius: 4px; padding: 1px 6px; font-size: 12px; font-weight: bold; margin-right: 6px; }
+  .notes-section { background: #0f0f1a; border-bottom: 1px solid #1a1a2a; padding: 10px 16px; }
+  .notes-title { font-size: 11px; font-weight: bold; color: #3a3a6a; text-transform: uppercase; margin-bottom: 6px; }
+  .notes-input { width: 100%; box-sizing: border-box; background: #1a1a2a; border: 1px solid #2a2a4a; border-radius: 6px; color: #c4b5fd; font-size: 13px; padding: 8px 10px; resize: vertical; min-height: 54px; font-family: sans-serif; outline: none; }
+  .notes-input:focus { border-color: #5a5a9a; }
+  .notes-status { font-size: 11px; color: #4ade80; margin-left: 4px; }
 </style>
 </head><body>
 <h1>Gohlem Call Transcripts</h1>
@@ -264,8 +278,34 @@ ${calls.length === 0 ? '<div class="empty">No calls yet — make a call and refr
     document.getElementById('body-' + idx).classList.toggle('open');
     document.getElementById('chev-' + idx).classList.toggle('open');
   }
+  async function saveNotes(id, el) {
+    const status = document.getElementById('nstatus-' + id);
+    status.textContent = 'Saving…';
+    try {
+      const res = await fetch('/voice/transcripts/' + id + '/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes: el.value }),
+      });
+      status.textContent = res.ok ? 'Saved' : 'Error';
+    } catch { status.textContent = 'Error'; }
+    setTimeout(() => { status.textContent = ''; }, 2000);
+  }
 </script>
 </body></html>`);
+});
+
+// Save notes for a transcript
+app.post('/voice/transcripts/:id/notes', express.json(), async (req, res) => {
+  const { id } = req.params;
+  const { notes } = req.body || {};
+  if (typeof notes !== 'string') return res.status(400).json({ error: 'notes must be a string' });
+  try {
+    await transcriptStore.updateNotes(Number(id), notes);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Open a new browser test session

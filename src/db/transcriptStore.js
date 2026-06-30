@@ -37,6 +37,7 @@ async function init() {
     `ALTER TABLE call_transcripts ADD COLUMN IF NOT EXISTS prompt_tokens     INTEGER`,
     `ALTER TABLE call_transcripts ADD COLUMN IF NOT EXISTS completion_tokens INTEGER`,
     `ALTER TABLE call_transcripts ADD COLUMN IF NOT EXISTS retell_cost_usd   NUMERIC(10,4)`,
+    `ALTER TABLE call_transcripts ADD COLUMN IF NOT EXISTS notes             TEXT`,
   ];
   for (const sql of alters) await db.query(sql);
 }
@@ -85,6 +86,11 @@ async function updateRetellCost(callSid, retellCostUsd) {
   );
 }
 
+async function updateNotes(id, notes) {
+  const db = getPool();
+  await db.query(`UPDATE call_transcripts SET notes = $1 WHERE id = $2`, [notes, id]);
+}
+
 async function getRecent(limit = 50) {
   const db = getPool();
   const result = await db.query(
@@ -94,4 +100,4 @@ async function getRecent(limit = 50) {
   return result.rows;
 }
 
-module.exports = { init, save, updateRetellCost, getRecent };
+module.exports = { init, save, updateRetellCost, updateNotes, getRecent };
