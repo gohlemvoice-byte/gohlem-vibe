@@ -72,6 +72,16 @@ function streamText(ws, responseId, text, endCall = false) {
   }
 }
 
+// Send an immediate filler phrase before the tool loop so the customer hears
+// acknowledgment within ~100ms instead of sitting in silence through 3+ API calls.
+// Skip for single-word responses (yes, no, okay) — those turns resolve fast enough
+// that a filler would feel redundant. Always fire for check-in phrases like "Hello?".
+function shouldSendFiller(text) {
+  const trimmed = text.trim();
+  if (/^(hello|hey|hi)\??$/i.test(trimmed)) return true;
+  return trimmed.split(/\s+/).length > 1;
+}
+
 // Fetch actual cost from Retell API — requires RETELL_API_KEY in Railway env vars.
 // Returns cost in USD (e.g. 0.114) or null if unavailable.
 async function fetchRetellCost(callId) {
@@ -237,6 +247,12 @@ async function handleConnection(ws, callId, slug) {
 
         const userTs = Date.now();
         session.transcript.push({ role: 'customer', text: userText, ts: userTs });
+
+        // Filler: send "Sure, one moment." immediately so the customer hears
+        // something within ~100ms while the tool loop runs in the background.
+        if (shouldSendFiller(userText)) {
+          wsSend(ws, response_id, 'Sure, one moment.', false, false);
+        }
 
         let message, toolCalls = [], tokenUsage = {}, steps = [];
         try {
